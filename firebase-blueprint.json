@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with optional embedded pet details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "sitter"] },
+        "city": { "type": "string" },
+        "pets": { "type": "array" }
+      },
+      "required": ["id", "firstName", "lastName", "email", "role", "city"]
+    },
+    "Sitter": {
+      "title": "Sitter",
+      "description": "Details of verified and registered pet sitters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "city": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "acceptedAnimals": { "type": "array" },
+        "pricePerNight": { "type": "number" },
+        "priceWeekend": { "type": "number" },
+        "bio": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "capacityMax": { "type": "number" },
+        "phone": { "type": "string" },
+        "availabilities": { "type": "array" }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "city",
+        "verified",
+        "rating",
+        "reviewCount",
+        "acceptedAnimals",
+        "pricePerNight",
+        "bio",
+        "photoUrl",
+        "capacityMax",
+        "phone",
+        "availabilities"
+      ]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A booking request between a pet owner and a sitter",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sitterId": { "type": "string" },
+        "sitterName": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "petName": { "type": "string" },
+        "petType": { "type": "string" },
+        "city": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "completed", "cancelled"] }
+      },
+      "required": [
+        "id",
+        "sitterId",
+        "sitterName",
+        "ownerId",
+        "ownerName",
+        "petName",
+        "petType",
+        "city",
+        "startDate",
+        "endDate",
+        "totalPrice",
+        "status"
+      ]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Chat message sent between a pet owner and a pet sitter",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "senderId": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "senderId", "recipientId", "text", "timestamp"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Feedback left for a pet sitter after a service",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sitterId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorCity": { "type": "string" },
+        "rating": { "type": "number" },
+        "date": { "type": "string" },
+        "text": { "type": "string" }
+      },
+      "required": ["id", "sitterId", "authorName", "authorCity", "rating", "date", "text"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts (owners and sitters)"
+    },
+    "/sitters/{sitterId}": {
+      "schema": "Sitter",
+      "description": "Detailed pet sitter profiles"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Reservations for sitting services"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Chat communication messages"
+    },
+    "/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Ratings and written feedback for sitters"
+    }
+  }
+}

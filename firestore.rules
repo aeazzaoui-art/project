@@ -1,0 +1,65 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    function isValidId(id) {
+      return id is string && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Rules for User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && (request.auth.uid == userId || resource == null);
+    }
+
+    // Rules for Sitter profiles
+    match /sitters/{sitterId} {
+      allow read: if true; // Publicly searchable
+      allow write: if isSignedIn() && (request.auth.uid == sitterId || resource == null);
+    }
+
+    // Rules for Bookings
+    match /bookings/{bookingId} {
+      allow read: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || 
+        resource.data.sitterId == request.auth.uid
+      );
+      allow create: if isSignedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isSignedIn() && (
+        resource.data.ownerId == request.auth.uid || 
+        resource.data.sitterId == request.auth.uid
+      );
+      allow delete: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // Rules for Messages
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.recipientId == request.auth.uid
+      );
+      allow create: if isSignedIn() && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if false; // Messages are immutable
+    }
+
+    // Rules for Reviews
+    match /reviews/{reviewId} {
+      allow read: if true; // Public reviews
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Reviews are immutable
+    }
+  }
+}

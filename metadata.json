@@ -1,0 +1,6 @@
+{
+  "name": "AMUCH",
+  "description": "Plateforme marocaine de mise en relation entre propriétaires d'animaux et pet sitters. Services de garde en toute confiance, vérifiés et sécurisés.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
