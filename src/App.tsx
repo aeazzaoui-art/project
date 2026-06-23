@@ -15,7 +15,8 @@ import {
   saveBooking, 
   updateBookingInFirestore,
   getReviewsFromFirestore,
-  saveSitter
+  saveSitter,
+  logoutWithAuth
 } from './lib/firebaseService';
 
 // Component imports
@@ -35,6 +36,7 @@ import SitterDashboard from './pages/SitterDashboard';
 import ChatView from './pages/ChatView';
 import About from './pages/About';
 import FAQView from './pages/FAQView';
+import Administration from './pages/Administration';
 
 export default function App() {
   // --- 1. LOCAL STORAGE PERSISTENCE STATES ---
@@ -92,6 +94,8 @@ export default function App() {
     return saved ? JSON.parse(saved) : SITTERS[0];
   });
 
+  const [activeChatPartnerId, setActiveChatPartnerId] = useState<string | null>(null);
+
   // Load data from Firebase on startup
   useEffect(() => {
     async function loadData() {
@@ -104,12 +108,65 @@ export default function App() {
 
         const fireReviews = await getReviewsFromFirestore();
         setReviews(fireReviews);
+
+        // Check if current logged-in user is blocked in Firestore
+        const savedUserStr = localStorage.getItem('amuch_user');
+        if (savedUserStr) {
+          const parsedUser = JSON.parse(savedUserStr) as User;
+          const freshUser = await getUser(parsedUser.id);
+          if (freshUser && freshUser.isBlocked) {
+            // Log out the blocked user
+            logoutWithAuth().catch(console.error);
+            setCurrentUser(null);
+            setCurrentSitterUser(null);
+            setActivePage('home');
+            localStorage.removeItem('amuch_user');
+            localStorage.removeItem('amuch_sitter_user');
+            alert(language === 'FR' 
+              ? "Votre compte a été suspendu par l'administrateur de la plateforme." 
+              : "تم تعليق حسابك من قبل المسؤول.");
+          } else if (freshUser) {
+            setCurrentUser(freshUser);
+          }
+        }
       } catch (err) {
         console.error("Failed to load Firebase initial data:", err);
       }
     }
     loadData();
   }, []);
+
+  // Sync URL Path with activePage (handling /adminstration or /administration)
+  useEffect(() => {
+    const syncPathWithPage = () => {
+      const path = window.location.pathname;
+      if (path === '/administration' || path === '/adminstration') {
+        if (activePage !== 'administration') {
+          setActivePage('administration');
+        }
+      } else if (activePage === 'administration') {
+        setActivePage('home');
+      }
+    };
+
+    syncPathWithPage();
+    window.addEventListener('popstate', syncPathWithPage);
+    return () => window.removeEventListener('popstate', syncPathWithPage);
+  }, [activePage]);
+
+  // Push Page state to browser history pathname
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (activePage === 'administration') {
+      if (path !== '/adminstration' && path !== '/administration') {
+        window.history.pushState({}, '', '/adminstration');
+      }
+    } else {
+      if (path === '/adminstration' || path === '/administration') {
+        window.history.pushState({}, '', '/');
+      }
+    }
+  }, [activePage]);
 
   // Modal for quick booking flow
   const [bookingModal, setBookingModal] = useState<{
@@ -355,11 +412,13 @@ export default function App() {
 
   // Starts chat directly with a sitter
   const handleStartChatWithSitter = (sitter: Sitter) => {
+    setActiveChatPartnerId(sitter.id);
     setActivePage('chat');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogout = () => {
+    logoutWithAuth().catch(console.error);
     setCurrentUser(null);
     setCurrentSitterUser(null);
     setActivePage('home');
@@ -367,6 +426,17 @@ export default function App() {
   };
 
   const isRtl = language === 'AR';
+
+  if (activePage === 'administration') {
+    return (
+      <Administration
+        language={language}
+        sitters={sitters}
+        bookings={bookings}
+        onBackToHome={() => setActivePage('home')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-white select-none">
@@ -416,6 +486,7 @@ export default function App() {
           <SignUpOwner
             language={language}
             onSignUpComplete={handleOwnerSignUpComplete}
+            onSitterSignUpComplete={handleSitterSignUpComplete}
             initialMode={authMode}
             onLoginComplete={(user) => {
               setCurrentUser(user);
@@ -466,6 +537,10 @@ export default function App() {
         {activePage === 'chat' && (
           <ChatView
             language={language}
+            currentUser={currentUser}
+            sitters={sitters}
+            activeChatPartnerId={activeChatPartnerId}
+            setActiveChatPartnerId={setActiveChatPartnerId}
             onViewSitterProfile={(sitterId) => {
               const matched = sitters.find(s => s.id === sitterId) || sitters[0];
               setSelectedSitter(matched);

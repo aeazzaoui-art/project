@@ -15,7 +15,8 @@ export type ActivePage =
   | 'sitter-dashboard'
   | 'chat'
   | 'about'
-  | 'faq';
+  | 'faq'
+  | 'administration';
 
 export type AnimalType = 'chien' | 'chat' | 'lapin' | 'oiseau' | 'autre';
 
@@ -36,6 +37,7 @@ export interface User {
   role: 'owner' | 'sitter';
   city: string;
   pets: Pet[];
+  isBlocked?: boolean;
 }
 
 export interface Sitter {

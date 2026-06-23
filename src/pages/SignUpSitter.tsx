@@ -3,21 +3,34 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCheck, Sparkles, FileText, Smartphone, Shield, ArrowRight, ArrowLeft, Upload, Check, Coins } from 'lucide-react';
 import { Language, User, Sitter, AnimalType } from '../types';
 import { translations } from '../translations';
+import { signUpSitterWithAuth } from '../lib/firebaseService';
 
 interface SignUpSitterProps {
   language: Language;
   onSignUpComplete: (sitter: Sitter) => void;
+  isEmbedded?: boolean;
+  onStepChange?: (step: number) => void;
 }
 
-export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitterProps) {
+export default function SignUpSitter({ 
+  language, 
+  onSignUpComplete,
+  isEmbedded = false,
+  onStepChange
+}: SignUpSitterProps) {
   const t = translations[language];
   const isRtl = language === 'AR';
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+
+  // Notify parent on step change
+  useEffect(() => {
+    onStepChange?.(step);
+  }, [step, onStepChange]);
 
   // Form States
   const [firstName, setFirstName] = useState('');
@@ -46,6 +59,7 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
   const [terms, setTerms] = useState(false);
 
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const togglePet = (type: AnimalType) => {
@@ -71,7 +85,7 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
       if (!firstName || !lastName || !email || !password) {
@@ -92,7 +106,7 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
       setStep(4);
     } else if (step === 4) {
       if (!isSmsVerified) {
-        setError(language === 'FR' ? "Veuillez d'abord vérifier votre numéro de téléphone." : "يرجى التحقق من رقم هاتفك أولاً.");
+        setError(language === 'FR' ? "Veuillez d'abord vérifier votre numéro de téléphone." : "يرجى التحقق من رقم habtfc أولاً.");
         return;
       }
       if (!terms) {
@@ -101,10 +115,9 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
       }
 
       setError('');
-      setIsSubmitted(true);
+      setLoading(true);
 
-      const newSitter: Sitter = {
-        id: `sitter-${Date.now()}`,
+      const sitterData: Omit<Sitter, 'id'> = {
         firstName,
         lastName,
         city,
@@ -121,16 +134,31 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
         availabilities: ['2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26', '2026-06-27', '2026-06-28']
       };
 
-      // Call profile signup completion in App state
-      setTimeout(() => {
-        onSignUpComplete(newSitter);
-      }, 3000);
+      try {
+        const newSitter = await signUpSitterWithAuth(email, password, sitterData);
+        setIsSubmitted(true);
+        setTimeout(() => {
+          onSignUpComplete(newSitter);
+        }, 1500);
+      } catch (err: any) {
+        console.error(err);
+        if (err?.message === 'EMAIL_ALREADY_EXISTS' || err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
+          setError(
+            language === 'FR'
+              ? "Cette adresse e-mail est déjà associée à un compte existant. Veuillez vous connecter ou utiliser un autre e-mail."
+              : "عنوان البريد الإلكتروني هذا مرتبط بالفعل بحساب موجود. يرجى تسجيل الدخول أو استخدام بريد إلكتروني آخر."
+          );
+        } else {
+          setError(err?.message || "An error occurred during registration. Please try again.");
+        }
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  return (
-    <div className="min-h-screen bg-[#F7F7F7] py-12 px-4 sm:px-6 lg:px-8" dir={isRtl ? 'rtl' : 'ltr'}>
-      <div className="max-w-2xl mx-auto">
+  const content = (
+    <>
         
         {/* Step Indicator HUD */}
         {!isSubmitted && (
@@ -532,10 +560,11 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-4 bg-[#FF6B00] text-white font-extrabold rounded-xl hover:bg-[#E55A00] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                      disabled={loading}
+                      className={`flex-1 py-4 bg-[#FF6B00] text-white font-extrabold rounded-xl hover:bg-[#E55A00] transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Shield className="w-5 h-5" />
-                      <span>{t.signup_sitter_submit}</span>
+                      <span>{loading ? (language === 'FR' ? "Inscription..." : "جاري التسجيل...") : t.signup_sitter_submit}</span>
                     </button>
                   </div>
                 </div>
@@ -545,6 +574,17 @@ export default function SignUpSitter({ language, onSignUpComplete }: SignUpSitte
           </div>
         )}
 
+    </>
+  );
+
+  if (isEmbedded) {
+    return <div dir={isRtl ? 'rtl' : 'ltr'}>{content}</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F7F7F7] py-12 px-4 sm:px-6 lg:px-8" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className="max-w-2xl mx-auto">
+        {content}
       </div>
     </div>
   );

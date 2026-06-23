@@ -5,13 +5,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Sparkles, CheckCircle, ArrowRight, ArrowLeft, Upload, FileCheck, HelpCircle, LogIn } from 'lucide-react';
-import { Language, User, Pet, AnimalType } from '../types';
+import { Language, User, Pet, AnimalType, Sitter } from '../types';
 import { translations } from '../translations';
 import { SITTERS } from '../data';
+import { signUpOwnerWithAuth, loginWithAuth } from '../lib/firebaseService';
+import SignUpSitter from './SignUpSitter';
 
 interface SignUpOwnerProps {
   language: Language;
   onSignUpComplete: (user: User) => void;
+  onSitterSignUpComplete: (sitter: Sitter) => void;
   initialMode?: 'login' | 'signup';
   onLoginComplete?: (user: User) => void;
 }
@@ -19,6 +22,7 @@ interface SignUpOwnerProps {
 export default function SignUpOwner({
   language,
   onSignUpComplete,
+  onSitterSignUpComplete,
   initialMode = 'signup',
   onLoginComplete
 }: SignUpOwnerProps) {
@@ -26,6 +30,8 @@ export default function SignUpOwner({
   const isRtl = language === 'AR';
 
   const [currentMode, setCurrentMode] = useState<'login' | 'signup'>(initialMode);
+  const [signUpRole, setSignUpRole] = useState<'owner' | 'sitter'>('owner');
+  const [sitterStep, setSitterStep] = useState(1);
 
   useEffect(() => {
     setCurrentMode(initialMode);
@@ -54,6 +60,7 @@ export default function SignUpOwner({
 
   // General errors
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Handle adding another pet
@@ -107,91 +114,80 @@ export default function SignUpOwner({
     setStep(3);
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     if (!termsAccepted) {
       setError(language === 'FR' ? "Vous devez accepter les conditions d'utilisation." : "يجب الموافقة على شروط الاستخدام.");
       return;
     }
 
-    // Create the simulated User account
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      firstName,
-      lastName,
-      email,
-      role: 'owner',
-      city,
-      pets: pets.filter(p => p.name.trim() !== '')
-    };
-
-    onSignUpComplete(newUser);
+    setLoading(true);
+    setError('');
+    try {
+      const activePets = pets.filter(p => p.name.trim() !== '');
+      const userData: Omit<User, 'id'> = {
+        firstName,
+        lastName,
+        email,
+        role: 'owner',
+        city,
+        pets: activePets
+      };
+      
+      const newUser = await signUpOwnerWithAuth(email, password, userData);
+      onSignUpComplete(newUser);
+    } catch (err: any) {
+      console.error(err);
+      if (err?.message === 'EMAIL_ALREADY_EXISTS' || err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
+        setError(
+          language === 'FR'
+            ? "Cette adresse e-mail est déjà associée à un compte existant. Veuillez vous connecter ou utiliser un autre e-mail."
+            : "عنوان البريد الإلكتروني هذا مرتبط بالفعل بحساب موجود. يرجى تسجيل الدخول أو استخدام بريد إلكتروني آخر."
+        );
+      } else {
+        setError(err?.message || "An error occurred during registration. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) {
       setError(language === 'FR' ? 'Veuillez remplir tous les champs.' : 'الرجاء ملء جميع الحقول');
       return;
     }
 
+    setLoading(true);
     setError('');
 
-    let loggedUser: User;
-
-    if (loginRole === 'sitter') {
-      const lowercaseEmail = loginEmail.toLowerCase();
-      const matchedSitter = SITTERS.find(s => 
-        lowercaseEmail.includes(s.firstName.toLowerCase()) || 
-        lowercaseEmail.includes(s.lastName.toLowerCase())
-      ) || SITTERS[0];
-
-      loggedUser = {
-        id: matchedSitter.id,
-        firstName: matchedSitter.firstName,
-        lastName: matchedSitter.lastName,
-        email: loginEmail,
-        role: 'sitter',
-        city: matchedSitter.city,
-        pets: []
-      };
-    } else {
-      const savedUserStr = localStorage.getItem('amuch_user');
-      let savedUser: User | null = null;
-      if (savedUserStr) {
-        try {
-          savedUser = JSON.parse(savedUserStr);
-        } catch (e) {
-          // ignore
-        }
+    try {
+      const loggedUser = await loginWithAuth(loginEmail, loginPassword);
+      
+      if (loggedUser.isBlocked) {
+        throw new Error(
+          language === 'FR' 
+            ? "Votre compte a été suspendu ou bloqué par l'administrateur de la plateforme Amuch." 
+            : "تم تعليق حسابك أو حظره من قبل مسؤول منصة أموش."
+        );
       }
-
-      if (savedUser && savedUser.email.toLowerCase() === loginEmail.toLowerCase()) {
-        loggedUser = savedUser;
+      
+      localStorage.setItem('amuch_user', JSON.stringify(loggedUser));
+      if (loggedUser.role === 'sitter') {
+        const matchedSitter = SITTERS.find(s => s.id === loggedUser.id) || SITTERS[0];
+        localStorage.setItem('amuch_sitter_user', JSON.stringify(matchedSitter));
       } else {
-        loggedUser = {
-          id: 'owner-default',
-          firstName: 'Salma',
-          lastName: 'Benkirane',
-          email: loginEmail,
-          role: 'owner',
-          city: 'Casablanca',
-          pets: [
-            { id: 'pet-seed-1', name: 'Lily', type: 'chat', breed: 'Siamois', age: '2 ans', photoUrl: '🐱' }
-          ]
-        };
+        localStorage.removeItem('amuch_sitter_user');
       }
-    }
 
-    localStorage.setItem('amuch_user', JSON.stringify(loggedUser));
-    if (loginRole === 'sitter') {
-      const matchedSitter = SITTERS.find(s => s.id === loggedUser.id) || SITTERS[0];
-      localStorage.setItem('amuch_sitter_user', JSON.stringify(matchedSitter));
-    } else {
-      localStorage.removeItem('amuch_sitter_user');
-    }
-
-    if (onLoginComplete) {
-      onLoginComplete(loggedUser);
+      if (onLoginComplete) {
+        onLoginComplete(loggedUser);
+      }
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Login failed. Please check your email and password.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -223,7 +219,7 @@ export default function SignUpOwner({
         </div>
 
         {/* Tab Switcher for Sign Up / Log In */}
-        {step === 1 && (
+        {((currentMode === 'login') || (currentMode === 'signup' && signUpRole === 'owner' && step === 1) || (currentMode === 'signup' && signUpRole === 'sitter' && sitterStep === 1)) && (
           <div className="flex bg-white rounded-2xl p-1 border border-[#E0E0E0] mb-6 shadow-sm">
             <button
               type="button"
@@ -256,8 +252,47 @@ export default function SignUpOwner({
           </div>
         )}
 
-        {/* Form Stepper HUD bar (only in signup mode) */}
-        {currentMode === 'signup' && (
+        {/* Unified Role Selector for Sign Up (only in signup mode on step 1) */}
+        {currentMode === 'signup' && ((signUpRole === 'owner' && step === 1) || (signUpRole === 'sitter' && sitterStep === 1)) && (
+          <div className="mb-6 space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase block mb-1">
+              {language === 'FR' ? "Je souhaite m'inscrire en tant que :" : language === 'AR' ? "أريد التسجيل كـ :" : "I want to sign up as:"}
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setSignUpRole('owner')}
+                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                  signUpRole === 'owner'
+                    ? 'border-[#FF6B00] bg-[#FF6B00]/5 text-[#FF6B00] font-extrabold shadow-sm'
+                    : 'border-gray-200 bg-white hover:border-gray-300 text-gray-500'
+                }`}
+              >
+                <span className="text-xl">🐶</span>
+                <span className="text-xs font-bold">
+                  {language === 'FR' ? "Propriétaire d'animal" : language === 'AR' ? "صاحب حيوان أليف" : "Pet Owner"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSignUpRole('sitter')}
+                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                  signUpRole === 'sitter'
+                    ? 'border-[#FF6B00] bg-[#FF6B00]/5 text-[#FF6B00] font-extrabold shadow-sm'
+                    : 'border-gray-200 bg-white hover:border-gray-300 text-gray-500'
+                }`}
+              >
+                <span className="text-xl">🐈</span>
+                <span className="text-xs font-bold">
+                  {language === 'FR' ? "Pet Sitter" : language === 'AR' ? "حارس حيوانات" : "Pet Sitter"}
+                </span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Form Stepper HUD bar (only in signup mode for owners) */}
+        {currentMode === 'signup' && signUpRole === 'owner' && (
           <div className="bg-white border border-[#E0E0E0] rounded-2xl px-6 py-4 shadow-sm mb-6 flex justify-between items-center text-xs font-bold text-gray-400">
             <div className={`flex items-center gap-1.5 ${step >= 1 ? 'text-[#FF6B00]' : ''}`}>
               <span className={`w-5 h-5 rounded-full flex items-center justify-center border text-[10px] ${step >= 1 ? 'border-[#FF6B00] bg-[#FF6B00]/5 font-black' : 'border-gray-300'}`}>1</span>
@@ -284,7 +319,15 @@ export default function SignUpOwner({
         )}
 
         {/* Active step contents wrapper */}
-        <div className="bg-white border border-[#E0E0E0] rounded-3xl p-6 sm:p-10 shadow-md">
+        {currentMode === 'signup' && signUpRole === 'sitter' ? (
+          <SignUpSitter
+            language={language}
+            onSignUpComplete={onSitterSignUpComplete}
+            isEmbedded={true}
+            onStepChange={setSitterStep}
+          />
+        ) : (
+          <div className="bg-white border border-[#E0E0E0] rounded-3xl p-6 sm:p-10 shadow-md">
           
           {/* LOGIN VIEW */}
           {currentMode === 'login' ? (
@@ -359,10 +402,11 @@ export default function SignUpOwner({
                 <button
                   id="login-submit-btn"
                   type="submit"
-                  className="w-full py-4 bg-[#FF6B00] text-white hover:bg-[#E55A00] font-extrabold rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+                  disabled={loading}
+                  className={`w-full py-4 bg-[#FF6B00] text-white hover:bg-[#E55A00] font-extrabold rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <LogIn className="w-5 h-5" />
-                  <span>{language === 'FR' ? "Se connecter" : language === 'AR' ? "تسجيل الدخول" : "Log In"}</span>
+                  <span>{loading ? (language === 'FR' ? "Connexion..." : "جاري الاتصال...") : (language === 'FR' ? "Se connecter" : language === 'AR' ? "تسجيل الدخول" : "Log In")}</span>
                 </button>
               </div>
             </form>
@@ -666,10 +710,11 @@ export default function SignUpOwner({
                       <button
                         id="signup-owner-final-submit-btn"
                         onClick={handleFinalSubmit}
-                        className="flex-1 py-4 bg-[#FF6B00] text-white hover:bg-[#E55A00] font-extrabold rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2"
+                        disabled={loading}
+                        className={`flex-1 py-4 bg-[#FF6B00] text-white hover:bg-[#E55A00] font-extrabold rounded-xl transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <CheckCircle className="w-5 h-5" />
-                        <span>{t.signup_owner_submit}</span>
+                        <span>{loading ? (language === 'FR' ? "Inscription..." : "جاري التسجيل...") : t.signup_owner_submit}</span>
                       </button>
                     </div>
                   </div>
@@ -679,7 +724,8 @@ export default function SignUpOwner({
             </>
           )}
 
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

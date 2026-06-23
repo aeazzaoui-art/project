@@ -15,6 +15,11 @@ import {
   orderBy, 
   addDoc 
 } from 'firebase/firestore';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signOut 
+} from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { User, Sitter, Booking, Message, Review } from '../types';
 import { SITTERS, REVIEWS } from '../data';
@@ -68,6 +73,117 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 /**
+ * Register a new Owner with Firebase Auth and Firestore
+ */
+export async function signUpOwnerWithAuth(email: string, password: string, userData: Omit<User, 'id'>): Promise<User> {
+  // Check if email already exists in Firestore
+  const normalizedEmail = email.trim().toLowerCase();
+  const usersCol = collection(db, 'users');
+  const q = query(usersCol, where('email', '==', normalizedEmail));
+  const querySnapshot = await getDocs(q);
+  if (!querySnapshot.empty) {
+    throw new Error('EMAIL_ALREADY_EXISTS');
+  }
+
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = userCredential.user.uid;
+  const newUser: User = {
+    ...userData,
+    email: normalizedEmail, // Save normalized email
+    id: uid,
+  };
+  await saveUser(newUser);
+  return newUser;
+}
+
+/**
+ * Register a new Sitter with Firebase Auth, and create user + sitter documents in Firestore
+ */
+export async function signUpSitterWithAuth(email: string, password: string, sitterData: Omit<Sitter, 'id'>): Promise<Sitter> {
+  // Check if email already exists in Firestore
+  const normalizedEmail = email.trim().toLowerCase();
+  const usersCol = collection(db, 'users');
+  const q = query(usersCol, where('email', '==', normalizedEmail));
+  const querySnapshot = await getDocs(q);
+  if (!querySnapshot.empty) {
+    throw new Error('EMAIL_ALREADY_EXISTS');
+  }
+
+  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+  const uid = userCredential.user.uid;
+  
+  // Create Sitter Object
+  const newSitter: Sitter = {
+    ...sitterData,
+    id: uid,
+  };
+  
+  // Create User wrapper
+  const newUser: User = {
+    id: uid,
+    firstName: sitterData.firstName,
+    lastName: sitterData.lastName,
+    email: normalizedEmail, // Save normalized email
+    role: 'sitter',
+    city: sitterData.city,
+    pets: []
+  };
+  
+  await saveUser(newUser);
+  await saveSitter(newSitter);
+  
+  return newSitter;
+}
+
+/**
+ * Login with Firebase Auth and fetch User profile from Firestore
+ */
+export async function loginWithAuth(email: string, password: string): Promise<User> {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  const uid = userCredential.user.uid;
+  
+  // Try to get User document
+  let user = await getUser(uid);
+  if (!user) {
+    // Check if they exist in sitters collection
+    const sitterDocSnap = await getDoc(doc(db, 'sitters', uid));
+    if (sitterDocSnap.exists()) {
+      const sitterData = sitterDocSnap.data() as Sitter;
+      user = {
+        id: uid,
+        firstName: sitterData.firstName,
+        lastName: sitterData.lastName,
+        email,
+        role: 'sitter',
+        city: sitterData.city,
+        pets: []
+      };
+      await saveUser(user);
+    } else {
+      // Fallback profile if user doc is missing
+      user = {
+        id: uid,
+        firstName: email.split('@')[0],
+        lastName: 'User',
+        email,
+        role: 'owner',
+        city: 'Casablanca',
+        pets: []
+      };
+      await saveUser(user);
+    }
+  }
+  return user;
+}
+
+/**
+ * Log out of Firebase
+ */
+export async function logoutWithAuth(): Promise<void> {
+  await signOut(auth);
+}
+
+/**
  * Sync / Save User Profile to Firestore
  */
 export async function saveUser(user: User): Promise<void> {
@@ -93,6 +209,38 @@ export async function getUser(userId: string): Promise<User | null> {
     handleFirestoreError(error, OperationType.GET, path);
   }
   return null;
+}
+
+/**
+ * Fetch all Users from Firestore
+ */
+export async function getAllUsersFromFirestore(): Promise<User[]> {
+  const path = 'users';
+  try {
+    const usersCol = collection(db, 'users');
+    const snapshot = await getDocs(usersCol);
+    const list: User[] = [];
+    snapshot.forEach((doc) => {
+      list.push(doc.data() as User);
+    });
+    return list;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, path);
+    return [];
+  }
+}
+
+/**
+ * Update the block status of a user in Firestore
+ */
+export async function updateUserBlockStatus(userId: string, isBlocked: boolean): Promise<void> {
+  const path = `users/${userId}`;
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { isBlocked });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
 }
 
 /**
