@@ -483,7 +483,7 @@ export default function App() {
 
   const isRtl = language === "AR";
 
-  if (realtimeLoading || authLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
         <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />

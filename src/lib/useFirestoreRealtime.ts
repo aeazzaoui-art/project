@@ -105,6 +105,9 @@ export function useFirestoreRealtime() {
         });
         setReviews(reviewsList);
         setLoading(false);
+      }, (error) => {
+        console.error("Error fetching reviews:", error);
+        setLoading(false);
       });
     } catch (err) {
       console.error("Error setting up real-time listeners:", err);

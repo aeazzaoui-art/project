@@ -62,6 +62,7 @@ export default function SignUpOwner({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoginSubmitted, setIsLoginSubmitted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Handle adding another pet
@@ -189,12 +190,14 @@ export default function SignUpOwner({
       }
 
       if (onLoginComplete) {
-        onLoginComplete(loggedUser);
+        setIsLoginSubmitted(true);
+        setTimeout(() => {
+          onLoginComplete(loggedUser);
+        }, 1500);
       }
     } catch (err: any) {
       console.error(err);
       setError(err?.message || "Login failed. Please check your email and password.");
-    } finally {
       setLoading(false);
     }
   };
@@ -354,6 +357,22 @@ export default function SignUpOwner({
           
           {/* LOGIN VIEW */}
           {currentMode === 'login' ? (
+            isLoginSubmitted ? (
+              <div className="bg-white rounded-3xl text-center space-y-6 py-4">
+                <div className="w-20 h-20 rounded-full bg-green-500 text-white flex items-center justify-center mx-auto text-4xl animate-bounce">
+                  ✓
+                </div>
+                <h2 className="text-2xl font-black text-[#111111]">
+                  {language === 'FR' ? "Connexion réussie !" : language === 'AR' ? "تم تسجيل الدخول بنجاح!" : "Login Successful!"}
+                </h2>
+                <div className="bg-green-50 border border-green-100 p-5 rounded-2xl max-w-md mx-auto text-sm font-bold text-green-800 leading-relaxed">
+                  {language === 'FR' ? "Vous êtes maintenant connecté(e)." : language === 'AR' ? "أنت الآن متصل." : "You are now logged in."}
+                </div>
+                <p className="text-xs text-gray-500 animate-pulse">
+                  {language === 'FR' ? "Redirection vers votre tableau de bord..." : language === 'AR' ? "جاري التوجيه إلى لوحة التحكم..." : "Redirecting to your dashboard..."}
+                </p>
+              </div>
+            ) : (
             <form onSubmit={handleLoginSubmit} className="space-y-6">
               {/* Role Selector Card Buttons */}
               <div className="space-y-2">
@@ -433,6 +452,7 @@ export default function SignUpOwner({
                 </button>
               </div>
             </form>
+            )
           ) : (
             <>
               {/* STEP 1: ACCOUNT CREATION */}
