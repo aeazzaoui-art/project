@@ -76,15 +76,7 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
  * Register a new Owner with Firebase Auth and Firestore
  */
 export async function signUpOwnerWithAuth(email: string, password: string, userData: Omit<User, 'id'>): Promise<User> {
-  // Check if email already exists in Firestore
   const normalizedEmail = email.trim().toLowerCase();
-  const usersCol = collection(db, 'users');
-  const q = query(usersCol, where('email', '==', normalizedEmail));
-  const querySnapshot = await getDocs(q);
-  if (!querySnapshot.empty) {
-    throw new Error('EMAIL_ALREADY_EXISTS');
-  }
-
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const uid = userCredential.user.uid;
   const newUser: User = {
@@ -100,15 +92,7 @@ export async function signUpOwnerWithAuth(email: string, password: string, userD
  * Register a new Sitter with Firebase Auth, and create user + sitter documents in Firestore
  */
 export async function signUpSitterWithAuth(email: string, password: string, sitterData: Omit<Sitter, 'id'>): Promise<Sitter> {
-  // Check if email already exists in Firestore
   const normalizedEmail = email.trim().toLowerCase();
-  const usersCol = collection(db, 'users');
-  const q = query(usersCol, where('email', '==', normalizedEmail));
-  const querySnapshot = await getDocs(q);
-  if (!querySnapshot.empty) {
-    throw new Error('EMAIL_ALREADY_EXISTS');
-  }
-
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
   const uid = userCredential.user.uid;
   

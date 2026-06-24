@@ -3,154 +3,138 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  ShieldAlert, 
-  DollarSign, 
-  CalendarRange, 
-  BarChart3, 
-  LogOut, 
-  Search, 
-  Lock, 
-  Mail, 
-  Shield, 
-  TrendingUp, 
-  MapPin, 
-  Check, 
+import React, { useState, useEffect } from "react";
+import {
+  Users,
+  ShieldAlert,
+  DollarSign,
+  CalendarRange,
+  BarChart3,
+  LogOut,
+  Search,
+  Lock,
+  Mail,
+  Shield,
+  TrendingUp,
+  MapPin,
+  Check,
   X,
   AlertTriangle,
   Sparkles,
   UserX,
   UserCheck,
-  ChevronRight
-} from 'lucide-react';
-import { Language, User, Sitter, Booking } from '../types';
-import { getAllUsersFromFirestore, updateUserBlockStatus } from '../lib/firebaseService';
+  ChevronRight,
+} from "lucide-react";
+import { Language, User, Sitter, Booking } from "../types";
+import {
+  getAllUsersFromFirestore,
+  updateUserBlockStatus,
+} from "../lib/firebaseService";
 
 interface AdministrationProps {
   language: Language;
+  users: User[];
   sitters: Sitter[];
   bookings: Booking[];
   onBackToHome: () => void;
 }
 
-export default function Administration({ 
-  language, 
-  sitters, 
-  bookings, 
-  onBackToHome 
+export default function Administration({
+  language,
+  users,
+  sitters,
+  bookings,
+  onBackToHome,
 }: AdministrationProps) {
-  const isRtl = language === 'AR';
+  const isRtl = language === "AR";
 
   // Auth state
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem('amuch_admin_logged_in') === 'true';
+    return sessionStorage.getItem("amuch_admin_logged_in") === "true";
   });
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loginError, setLoginError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'users'>('dashboard');
-
-  // Firestore Users state
-  const [usersList, setUsersList] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [usersError, setUsersError] = useState('');
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users">(
+    "dashboard",
+  );
 
   // Search & Filters state
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'owner' | 'sitter'>('all');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'blocked'>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "owner" | "sitter">(
+    "all",
+  );
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "blocked"
+  >("all");
 
   // Status Action Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     userId: string;
     userName: string;
-    action: 'block' | 'unblock';
+    action: "block" | "unblock";
   } | null>(null);
 
   // Selected User Details Modal State
-  const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(null);
-
-  // Load Users from Firestore
-  const fetchUsers = async () => {
-    setIsLoadingUsers(true);
-    setUsersError('');
-    try {
-      const data = await getAllUsersFromFirestore();
-      setUsersList(data);
-    } catch (err: any) {
-      console.error(err);
-      setUsersError(language === 'FR' ? "Erreur lors du chargement des utilisateurs." : "خطأ أثناء تحميل المستخدمين.");
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAdminLoggedIn) {
-      fetchUsers();
-    }
-  }, [isAdminLoggedIn]);
+  const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(
+    null,
+  );
 
   // Handle Login
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginError('');
+    setLoginError("");
     setIsLoggingIn(true);
 
     // Hardcoded requested credentials
-    if (email.trim() === 'aeazzaoui@gmail.com' && password === 'Abdou9708') {
-      setTimeout(() => {
-        setIsAdminLoggedIn(true);
-        sessionStorage.setItem('amuch_admin_logged_in', 'true');
-        setIsLoggingIn(false);
-      }, 600);
+    if (email.trim() === "aeazzaoui@gmail.com" && password === "Abdou9708") {
+      setIsAdminLoggedIn(true);
+      sessionStorage.setItem("amuch_admin_logged_in", "true");
+      setIsLoggingIn(false);
     } else {
-      setTimeout(() => {
-        setLoginError(
-          language === 'FR' 
-            ? "Identifiants invalides. Veuillez réessayer." 
-            : "البريد الإلكتروني أو كلمة المرor غير صحيحة."
-        );
-        setIsLoggingIn(false);
-      }, 500);
+      setLoginError(
+        language === "FR"
+          ? "Identifiants invalides. Veuillez réessayer."
+          : "البريد الإلكتروني أو كلمة المرor غير صحيحة.",
+      );
+      setIsLoggingIn(false);
     }
   };
 
   // Handle Logout
   const handleLogout = () => {
     setIsAdminLoggedIn(false);
-    sessionStorage.removeItem('amuch_admin_logged_in');
-    setEmail('');
-    setPassword('');
+    sessionStorage.removeItem("amuch_admin_logged_in");
+    setEmail("");
+    setPassword("");
   };
 
   // Handle User Blocking toggle
   const handleConfirmAction = async () => {
     if (!confirmModal) return;
     const { userId, action } = confirmModal;
-    const isBlocked = action === 'block';
+    const isBlocked = action === "block";
 
     try {
       await updateUserBlockStatus(userId, isBlocked);
-      
-      // Update local state instantly
-      setUsersList(prev => prev.map(u => u.id === userId ? { ...u, isBlocked } : u));
-      
+
       // Flash Alert/Toast
       alert(
-        language === 'FR' 
-          ? `L'utilisateur a été ${isBlocked ? 'bloqué' : 'débloqué'} avec succès.`
-          : `تم ${isBlocked ? 'حظر' : 'إلغاء حظر'} المستخدم بنجاح.`
+        language === "FR"
+          ? `L'utilisateur a été ${isBlocked ? "bloqué" : "débloqué"} avec succès.`
+          : `تم ${isBlocked ? "حظر" : "إلغاء حظر"} المستخدم بنجاح.`,
       );
     } catch (err) {
       console.error(err);
-      alert(language === 'FR' ? "Échec de la modification du statut." : "فشل تغيير الحالة.");
+      alert(
+        language === "FR"
+          ? "Échec de la modification du statut."
+          : "فشل تغيير الحالة.",
+      );
     } finally {
       setConfirmModal(null);
     }
@@ -159,25 +143,41 @@ export default function Administration({
   // --- STATS CALCULATIONS ---
   // Total reservations
   const totalReservations = bookings.length;
-  
+
   // Total Revenue calculation (Sum of prices of all bookings)
-  const totalRevenue = bookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+  const totalRevenue = bookings.reduce(
+    (sum, b) => sum + (b.totalPrice || 0),
+    0,
+  );
 
   // AMUCH Platform commission (15% standard rate)
   const platformCommission = Math.round(totalRevenue * 0.15);
 
   // Total registered Owners
-  const ownersCount = usersList.filter(u => u.role === 'owner').length;
+  const ownersCount = users.filter((u) => u.role === "owner").length;
 
   // Total registered Sitters (Both in Firestore and default)
-  const sittersCount = usersList.filter(u => u.role === 'sitter').length;
+  const sittersCount = users.filter((u) => u.role === "sitter").length;
 
   // Monthly breakdown of bookings for trend chart
   const getMonthlyStats = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     const monthlyData = Array(12).fill(0);
-    
-    bookings.forEach(b => {
+
+    bookings.forEach((b) => {
       if (b.startDate) {
         const monthIndex = new Date(b.startDate).getMonth();
         if (monthIndex >= 0 && monthIndex < 12) {
@@ -186,21 +186,24 @@ export default function Administration({
       }
     });
 
-    return months.map((month, idx) => ({
-      month,
-      count: monthlyData[idx]
-    })).filter((_, idx) => idx <= new Date().getMonth()); // show up to current month
+    return months
+      .map((month, idx) => ({
+        month,
+        count: monthlyData[idx],
+      }))
+      .filter((_, idx) => idx <= new Date().getMonth()); // show up to current month
   };
 
   const monthlyTrend = getMonthlyStats();
-  const maxTrendValue = Math.max(...monthlyTrend.map(d => d.count), 5);
+  const maxTrendValue = Math.max(...monthlyTrend.map((d) => d.count), 5);
 
   // City breakdown of bookings
   const getCityBreakdown = () => {
-    const cityMap: Record<string, { bookingsCount: number; revenue: number }> = {};
-    
-    bookings.forEach(b => {
-      const city = b.city || 'Casablanca';
+    const cityMap: Record<string, { bookingsCount: number; revenue: number }> =
+      {};
+
+    bookings.forEach((b) => {
+      const city = b.city || "Casablanca";
       if (!cityMap[city]) {
         cityMap[city] = { bookingsCount: 0, revenue: 0 };
       }
@@ -212,10 +215,12 @@ export default function Administration({
       return [];
     }
 
-    return Object.entries(cityMap).map(([name, stats]) => ({
-      name,
-      ...stats
-    })).sort((a, b) => b.revenue - a.revenue);
+    return Object.entries(cityMap)
+      .map(([name, stats]) => ({
+        name,
+        ...stats,
+      }))
+      .sort((a, b) => b.revenue - a.revenue);
   };
 
   const cityBreakdown = getCityBreakdown();
@@ -226,11 +231,11 @@ export default function Administration({
     let dogs = 0;
     let others = 0;
 
-    bookings.forEach(b => {
-      const type = (b.petType || '').toLowerCase();
-      if (type.includes('chat') || type.includes('cat')) {
+    bookings.forEach((b) => {
+      const type = (b.petType || "").toLowerCase();
+      if (type.includes("chat") || type.includes("cat")) {
         cats++;
-      } else if (type.includes('chien') || type.includes('dog')) {
+      } else if (type.includes("chien") || type.includes("dog")) {
         dogs++;
       } else {
         others++;
@@ -245,45 +250,54 @@ export default function Administration({
     return {
       cats: Math.round((cats / total) * 100),
       dogs: Math.round((dogs / total) * 100),
-      others: Math.round((others / total) * 100)
+      others: Math.round((others / total) * 100),
     };
   };
 
   const petDistribution = getPetDistribution();
 
   // Filtered Users List
-  const filteredUsers = usersList.filter(user => {
+  const filteredUsers = users.filter((user) => {
     // 1. Search term match
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-    const emailMatch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const emailMatch = user.email
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const nameMatch = fullName.includes(searchTerm.toLowerCase());
-    const cityMatch = user.city.toLowerCase().includes(searchTerm.toLowerCase());
+    const cityMatch = user.city
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
     const matchesSearch = emailMatch || nameMatch || cityMatch;
 
     // 2. Role filter match
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || user.role === roleFilter;
 
     // 3. Status filter match
-    const matchesStatus = 
-      statusFilter === 'all' || 
-      (statusFilter === 'blocked' && user.isBlocked === true) || 
-      (statusFilter === 'active' && !user.isBlocked);
+    const matchesStatus =
+      statusFilter === "all" ||
+      (statusFilter === "blocked" && user.isBlocked === true) ||
+      (statusFilter === "active" && !user.isBlocked);
 
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const getSitterInfo = (userId: string) => {
-    return sitters.find(s => s.id === userId);
+    return sitters.find((s) => s.id === userId);
   };
 
   // --- RENDER LOGIN VIEW ---
   if (!isAdminLoggedIn) {
     return (
-      <div className="min-h-screen bg-[#F9FAFB] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8" dir={isRtl ? 'rtl' : 'ltr'}>
+      <div
+        className="min-h-screen bg-[#F9FAFB] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8"
+        dir={isRtl ? "rtl" : "ltr"}
+      >
         <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
           <div className="flex justify-center items-center gap-2 mb-2">
             <span className="text-3xl">🛡️</span>
-            <span className="text-3xl font-black text-[#111111] tracking-tight">AMUCH</span>
+            <span className="text-3xl font-black text-[#111111] tracking-tight">
+              AMUCH
+            </span>
           </div>
           <span className="inline-flex items-center gap-1 bg-[#FF6B00]/10 text-[#FF6B00] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-6">
             Espace Administration
@@ -363,14 +377,16 @@ export default function Administration({
             </form>
 
             <div className="mt-6 pt-5 border-t border-gray-100 flex justify-between items-center text-xs">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={onBackToHome}
                 className="text-gray-400 hover:text-gray-600 font-bold transition-colors cursor-pointer"
               >
                 ← Retour au site
               </button>
-              <span className="text-gray-400 font-medium">AMUCH Admin v1.2</span>
+              <span className="text-gray-400 font-medium">
+                AMUCH Admin v1.2
+              </span>
             </div>
           </div>
         </div>
@@ -380,14 +396,19 @@ export default function Administration({
 
   // --- RENDER ADMIN DASHBOARD VIEW ---
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex font-sans text-gray-800" dir={isRtl ? 'rtl' : 'ltr'}>
+    <div
+      className="min-h-screen bg-[#F9FAFB] flex font-sans text-gray-800"
+      dir={isRtl ? "rtl" : "ltr"}
+    >
       {/* 1. SIDEBAR NAVIGATION */}
       <aside className="w-64 bg-white border-r border-gray-100 flex flex-col shrink-0 min-h-screen">
         {/* Brand Header */}
         <div className="p-6 border-b border-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <span className="text-2xl">🐕</span>
-            <span className="text-xl font-black text-[#111111] tracking-tight">AMUCH</span>
+            <span className="text-xl font-black text-[#111111] tracking-tight">
+              AMUCH
+            </span>
           </div>
           <span className="bg-[#FF6B00]/10 text-[#FF6B00] text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">
             ADMIN
@@ -400,8 +421,12 @@ export default function Administration({
             AA
           </div>
           <div className="overflow-hidden">
-            <h4 className="text-xs font-black text-gray-800 truncate">Abdou El Azzaoui</h4>
-            <span className="text-[10px] text-gray-400 truncate block">aeazzaoui@gmail.com</span>
+            <h4 className="text-xs font-black text-gray-800 truncate">
+              Abdou El Azzaoui
+            </h4>
+            <span className="text-[10px] text-gray-400 truncate block">
+              aeazzaoui@gmail.com
+            </span>
           </div>
         </div>
 
@@ -409,11 +434,11 @@ export default function Administration({
         <nav className="flex-1 px-4 py-3 space-y-1.5">
           <button
             type="button"
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => setActiveTab("dashboard")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              activeTab === 'dashboard'
-                ? 'bg-[#FF6B00]/10 text-[#FF6B00]'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              activeTab === "dashboard"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
             }`}
           >
             <BarChart3 className="w-4 h-4" />
@@ -421,15 +446,15 @@ export default function Administration({
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab('users')}
+            onClick={() => setActiveTab("users")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
-              activeTab === 'users'
-                ? 'bg-[#FF6B00]/10 text-[#FF6B00]'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              activeTab === "users"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
             }`}
           >
             <Users className="w-4 h-4" />
-            Utilisateurs ({usersList.length})
+            Utilisateurs ({users.length})
           </button>
         </nav>
 
@@ -459,11 +484,23 @@ export default function Administration({
         <header className="h-16 bg-white border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <div>
             <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
-              {activeTab === 'dashboard' ? "Vue Globale & Métriques" : "Gestion des Comptes Utilisateurs"}
+              {activeTab === "dashboard"
+                ? "Vue Globale & Métriques"
+                : "Gestion des Comptes Utilisateurs"}
             </h2>
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold text-gray-400">
-            <span>{new Date().toLocaleDateString(language === 'FR' ? 'fr-FR' : 'ar-MA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            <span>
+              {new Date().toLocaleDateString(
+                language === "FR" ? "fr-FR" : "ar-MA",
+                {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                },
+              )}
+            </span>
             <div className="h-4 w-px bg-gray-200"></div>
             <span className="text-[#FF6B00] flex items-center gap-1 font-bold">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
@@ -474,94 +511,124 @@ export default function Administration({
 
         {/* Content container */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          
           {/* TAB 1: DASHBOARD STATS */}
-          {activeTab === 'dashboard' && (
+          {activeTab === "dashboard" && (
             <div className="space-y-8 animate-fade-in">
               {/* Bento Grid KPI Widgets */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-                
                 {/* Metric 1: Total Users */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Utilisateurs</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Utilisateurs
+                    </span>
                     <span className="p-2 rounded-xl bg-blue-50 text-blue-500 group-hover:scale-110 transition-transform">
                       <Users className="w-5 h-5" />
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">{usersList.length}</span>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Inscrits en base Firestore</p>
+                    <span className="text-3xl font-black text-gray-900">
+                      {users.length}
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                      Inscrits en base Firestore
+                    </p>
                   </div>
                 </div>
 
                 {/* Metric 2: Owners */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Propriétaires</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Propriétaires
+                    </span>
                     <span className="p-2 rounded-xl bg-orange-50 text-orange-500 group-hover:scale-110 transition-transform">
                       🐶
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">{ownersCount}</span>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Doivent faire garder un animal</p>
+                    <span className="text-3xl font-black text-gray-900">
+                      {ownersCount}
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                      Doivent faire garder un animal
+                    </p>
                   </div>
                 </div>
 
                 {/* Metric 3: Sitters */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Sitter Pro</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Sitter Pro
+                    </span>
                     <span className="p-2 rounded-xl bg-purple-50 text-purple-500 group-hover:scale-110 transition-transform">
                       🐈
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">{sittersCount}</span>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Profils de garde disponibles</p>
+                    <span className="text-3xl font-black text-gray-900">
+                      {sittersCount}
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                      Profils de garde disponibles
+                    </p>
                   </div>
                 </div>
 
                 {/* Metric 4: Reservations */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Réservations</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Réservations
+                    </span>
                     <span className="p-2 rounded-xl bg-emerald-50 text-emerald-500 group-hover:scale-110 transition-transform">
                       <CalendarRange className="w-5 h-5" />
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">{totalReservations}</span>
-                    <p className="text-[10px] text-gray-400 font-semibold mt-1">Total de nuits réservées</p>
+                    <span className="text-3xl font-black text-gray-900">
+                      {totalReservations}
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                      Total de nuits réservées
+                    </p>
                   </div>
                 </div>
 
                 {/* Metric 5: Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Chiffre d'affaires</span>
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Chiffre d'affaires
+                    </span>
                     <span className="p-2 rounded-xl bg-[#FF6B00]/10 text-[#FF6B00] group-hover:scale-110 transition-transform">
                       <DollarSign className="w-5 h-5" />
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-[#FF6B00]">{totalRevenue} MAD</span>
-                    <p className="text-[10px] text-emerald-600 font-bold mt-1">Com: {platformCommission} MAD (15%)</p>
+                    <span className="text-3xl font-black text-[#FF6B00]">
+                      {totalRevenue} MAD
+                    </span>
+                    <p className="text-[10px] text-emerald-600 font-bold mt-1">
+                      Com: {platformCommission} MAD (15%)
+                    </p>
                   </div>
                 </div>
-
               </div>
 
               {/* Data Visualization Section */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
                 {/* Chart 1: Booking Trends */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm col-span-2 space-y-4">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                     <div>
-                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">Évolution des Réservations</h3>
-                      <p className="text-[10px] text-gray-400 font-medium">Nombre de demandes mensuelles d'animaux de compagnie</p>
+                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                        Évolution des Réservations
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-medium">
+                        Nombre de demandes mensuelles d'animaux de compagnie
+                      </p>
                     </div>
                     <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B00]/5 text-[#FF6B00] text-[10px] font-extrabold">
                       <TrendingUp className="w-3.5 h-3.5" />
@@ -581,25 +648,48 @@ export default function Administration({
                       </div>
 
                       {/* Area Chart Fill Overlay */}
-                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      <svg
+                        className="absolute inset-0 w-full h-full"
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                      >
                         <defs>
-                          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#FF6B00" stopOpacity="0.45" />
-                            <stop offset="100%" stopColor="#FF6B00" stopOpacity="0" />
+                          <linearGradient
+                            id="chartGrad"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#FF6B00"
+                              stopOpacity="0.45"
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#FF6B00"
+                              stopOpacity="0"
+                            />
                           </linearGradient>
                         </defs>
                         {/* Area Polygon */}
                         <polygon
                           points={`
                             0,100
-                            ${monthlyTrend.map((d, i) => `${(i / (monthlyTrend.length - 1)) * 100},${100 - (d.count / maxTrendValue) * 85}`).join(' ')}
+                            ${monthlyTrend.map((d, i) => `${(i / (monthlyTrend.length - 1)) * 100},${100 - (d.count / maxTrendValue) * 85}`).join(" ")}
                             100,100
                           `}
                           fill="url(#chartGrad)"
                         />
                         {/* Line Stroke */}
                         <polyline
-                          points={monthlyTrend.map((d, i) => `${(i / (monthlyTrend.length - 1)) * 100},${100 - (d.count / maxTrendValue) * 85}`).join(' ')}
+                          points={monthlyTrend
+                            .map(
+                              (d, i) =>
+                                `${(i / (monthlyTrend.length - 1)) * 100},${100 - (d.count / maxTrendValue) * 85}`,
+                            )
+                            .join(" ")}
                           fill="none"
                           stroke="#FF6B00"
                           strokeWidth="2.5"
@@ -610,22 +700,25 @@ export default function Administration({
                       {/* Interactive Point indicators */}
                       <div className="absolute inset-0 flex justify-between">
                         {monthlyTrend.map((d, i) => {
-                          const topPercent = 100 - (d.count / maxTrendValue) * 85;
+                          const topPercent =
+                            100 - (d.count / maxTrendValue) * 85;
                           return (
-                            <div 
-                              key={d.month} 
+                            <div
+                              key={d.month}
                               className="flex flex-col items-center justify-end group/item relative h-full cursor-pointer"
                               style={{ width: `${100 / monthlyTrend.length}%` }}
                             >
-                              <div 
+                              <div
                                 className="absolute bg-[#111111] text-white text-[9px] font-black px-2 py-1 rounded-md opacity-0 group-hover/item:opacity-100 bottom-full mb-1 transition-opacity z-25 pointer-events-none whitespace-nowrap shadow-md"
                                 style={{ bottom: `${100 - topPercent + 4}%` }}
                               >
                                 {d.count} rés.
                               </div>
-                              <div 
+                              <div
                                 className="absolute w-3 h-3 rounded-full bg-white border-2 border-[#FF6B00] opacity-0 group-hover/item:opacity-100 shadow-md transition-opacity"
-                                style={{ bottom: `calc(${100 - topPercent}% - 6px)` }}
+                                style={{
+                                  bottom: `calc(${100 - topPercent}% - 6px)`,
+                                }}
                               ></div>
                             </div>
                           );
@@ -635,8 +728,10 @@ export default function Administration({
 
                     {/* X Axis Labels */}
                     <div className="flex justify-between border-t border-gray-100 pt-2 text-[10px] text-gray-400 font-extrabold">
-                      {monthlyTrend.map(d => (
-                        <span key={d.month} className="text-center flex-1">{d.month}</span>
+                      {monthlyTrend.map((d) => (
+                        <span key={d.month} className="text-center flex-1">
+                          {d.month}
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -645,17 +740,31 @@ export default function Administration({
                 {/* Chart 2: Pet Type distribution Donut */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
                   <div className="pb-2 border-b border-gray-50">
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">Répartition par Animaux</h3>
-                    <p className="text-[10px] text-gray-400 font-medium">Pourcentage d'animaux confiés sur Amuch</p>
+                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                      Répartition par Animaux
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-medium">
+                      Pourcentage d'animaux confiés sur Amuch
+                    </p>
                   </div>
 
                   <div className="flex justify-center items-center py-4 relative">
                     {/* Ring Chart representation */}
                     <div className="w-36 h-36 rounded-full border-[14px] border-emerald-500 relative flex items-center justify-center">
-                      <div className="absolute inset-[-14px] rounded-full border-[14px] border-[#FF6B00] clip-donut-cats" style={{ clipPath: 'polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 50%)' }}></div>
+                      <div
+                        className="absolute inset-[-14px] rounded-full border-[14px] border-[#FF6B00] clip-donut-cats"
+                        style={{
+                          clipPath:
+                            "polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 50%)",
+                        }}
+                      ></div>
                       <div className="text-center">
-                        <span className="text-xs text-gray-400 font-bold block uppercase tracking-wide">Majorité</span>
-                        <span className="text-xl font-black text-gray-800">{petDistribution.cats}% Chats</span>
+                        <span className="text-xs text-gray-400 font-bold block uppercase tracking-wide">
+                          Majorité
+                        </span>
+                        <span className="text-xl font-black text-gray-800">
+                          {petDistribution.cats}% Chats
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -685,23 +794,30 @@ export default function Administration({
                     </div>
                   </div>
                 </div>
-
               </div>
 
               {/* Row 3: City performance & Recent bookings logs */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
                 {/* Cities Performance Indicator Bars */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                   <div className="pb-2 border-b border-gray-50">
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">Performance par Ville</h3>
-                    <p className="text-[10px] text-gray-400 font-medium">Revenus et réservations générés par zone au Maroc</p>
+                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                      Performance par Ville
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-medium">
+                      Revenus et réservations générés par zone au Maroc
+                    </p>
                   </div>
 
                   <div className="space-y-4 pt-2">
                     {cityBreakdown.map((city) => {
-                      const maxRevenue = Math.max(...cityBreakdown.map(c => c.revenue), 1000);
-                      const percent = Math.round((city.revenue / maxRevenue) * 100);
+                      const maxRevenue = Math.max(
+                        ...cityBreakdown.map((c) => c.revenue),
+                        1000,
+                      );
+                      const percent = Math.round(
+                        (city.revenue / maxRevenue) * 100,
+                      );
                       return (
                         <div key={city.name} className="space-y-1.5">
                           <div className="flex justify-between items-baseline text-xs font-extrabold">
@@ -709,10 +825,12 @@ export default function Administration({
                               <MapPin className="w-3.5 h-3.5 text-[#FF6B00]" />
                               {city.name}
                             </span>
-                            <span className="text-gray-900">{city.revenue} MAD</span>
+                            <span className="text-gray-900">
+                              {city.revenue} MAD
+                            </span>
                           </div>
                           <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="bg-[#FF6B00] h-full rounded-full transition-all duration-500"
                               style={{ width: `${percent}%` }}
                             ></div>
@@ -731,12 +849,20 @@ export default function Administration({
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm lg:col-span-2 space-y-4">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                     <div>
-                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">Demandes de Gardes Récentes</h3>
-                      <p className="text-[10px] text-gray-400 font-medium">Dernières réservations effectuées par les propriétaires</p>
+                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                        Demandes de Gardes Récentes
+                      </h3>
+                      <p className="text-[10px] text-gray-400 font-medium">
+                        Dernières réservations effectuées par les propriétaires
+                      </p>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={() => alert("Fonctionnalité d'exportation de logs en cours de développement.")}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        alert(
+                          "Fonctionnalité d'exportation de logs en cours de développement.",
+                        )
+                      }
                       className="text-[#FF6B00] text-[10px] font-extrabold hover:underline"
                     >
                       Exporter XLSX
@@ -756,53 +882,79 @@ export default function Administration({
                       </thead>
                       <tbody className="font-semibold text-gray-700 divide-y divide-gray-50/50">
                         {bookings.slice(0, 4).map((b) => (
-                          <tr key={b.id} className="hover:bg-gray-50/50 transition-colors">
+                          <tr
+                            key={b.id}
+                            className="hover:bg-gray-50/50 transition-colors"
+                          >
                             <td className="py-3">
-                              <span className="font-extrabold text-gray-900 block">{b.ownerName}</span>
-                              <span className="text-[10px] text-gray-400 block">Compagnon: {b.petName} ({b.petType})</span>
+                              <span className="font-extrabold text-gray-900 block">
+                                {b.ownerName}
+                              </span>
+                              <span className="text-[10px] text-gray-400 block">
+                                Compagnon: {b.petName} ({b.petType})
+                              </span>
                             </td>
-                            <td className="py-3 text-gray-900 font-extrabold">{b.sitterName}</td>
+                            <td className="py-3 text-gray-900 font-extrabold">
+                              {b.sitterName}
+                            </td>
                             <td className="py-3">
-                              <span className="block">{b.startDate} → {b.endDate}</span>
-                              <span className="text-[10px] text-[#FF6B00] block">📍 {b.city}</span>
+                              <span className="block">
+                                {b.startDate} → {b.endDate}
+                              </span>
+                              <span className="text-[10px] text-[#FF6B00] block">
+                                📍 {b.city}
+                              </span>
                             </td>
                             <td className="py-3 text-center">
-                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
-                                b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                b.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                                b.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                'bg-yellow-100 text-yellow-700'
-                              }`}>
+                              <span
+                                className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                                  b.status === "confirmed"
+                                    ? "bg-green-100 text-green-700"
+                                    : b.status === "cancelled"
+                                      ? "bg-red-100 text-red-700"
+                                      : b.status === "completed"
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                }`}
+                              >
                                 {b.status}
                               </span>
                             </td>
-                            <td className="py-3 text-right font-black text-gray-900">{b.totalPrice} MAD</td>
+                            <td className="py-3 text-right font-black text-gray-900">
+                              {b.totalPrice} MAD
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 </div>
-
               </div>
             </div>
           )}
 
           {/* TAB 2: USERS ADMINISTRATION */}
-          {activeTab === 'users' && (
+          {activeTab === "users" && (
             <div className="space-y-6 animate-fade-in">
-              
               {/* Header block with search filter */}
               <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">Filtrer & Rechercher</h3>
-                    <p className="text-[10px] text-gray-400 font-semibold">Recherchez un utilisateur par nom, email ou filtrez par rôle et statut.</p>
+                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                      Filtrer & Rechercher
+                    </h3>
+                    <p className="text-[10px] text-gray-400 font-semibold">
+                      Recherchez un utilisateur par nom, email ou filtrez par
+                      rôle et statut.
+                    </p>
                   </div>
-                  
+
                   {/* Total indicator */}
                   <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">
-                    <span className="font-extrabold">{filteredUsers.length}</span> correspondants
+                    <span className="font-extrabold">
+                      {filteredUsers.length}
+                    </span>{" "}
+                    correspondants
                   </span>
                 </div>
 
@@ -851,26 +1003,13 @@ export default function Administration({
 
               {/* Users list table */}
               <div className="bg-white border border-gray-100 rounded-3xl shadow-sm overflow-hidden">
-                {isLoadingUsers ? (
-                  <div className="p-16 text-center text-gray-400 font-semibold space-y-3">
-                    <span className="w-8 h-8 border-4 border-[#FF6B00] border-t-transparent rounded-full animate-spin inline-block"></span>
-                    <p className="text-xs">Chargement des comptes utilisateurs depuis Firestore...</p>
-                  </div>
-                ) : usersError ? (
-                  <div className="p-16 text-center text-red-500 font-semibold space-y-2">
-                    <AlertTriangle className="w-8 h-8 mx-auto" />
-                    <p className="text-xs">{usersError}</p>
-                    <button 
-                      onClick={fetchUsers}
-                      className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-extrabold"
-                    >
-                      Réessayer
-                    </button>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
+                {filteredUsers.length === 0 ? (
                   <div className="p-16 text-center text-gray-400 font-semibold space-y-2">
                     <span className="text-3xl block">🔍</span>
-                    <p className="text-xs">Aucun utilisateur ne correspond à vos critères de filtrage.</p>
+                    <p className="text-xs">
+                      Aucun utilisateur ne correspond à vos critères de
+                      filtrage.
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -888,58 +1027,74 @@ export default function Administration({
                       </thead>
                       <tbody className="font-semibold text-gray-700 divide-y divide-gray-100/60">
                         {filteredUsers.map((user) => (
-                          <tr 
-                            key={user.id} 
+                          <tr
+                            key={user.id}
                             onClick={() => setSelectedUserDetails(user)}
                             className={`cursor-pointer hover:bg-gray-50/60 transition-colors ${
-                              user.isBlocked ? 'bg-red-50/10' : ''
+                              user.isBlocked ? "bg-red-50/10" : ""
                             }`}
                           >
                             {/* Full Name & Avatar */}
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
-                                <div className={`w-9 h-9 rounded-full font-extrabold flex items-center justify-center text-xs shadow-sm ${
-                                  user.role === 'sitter' 
-                                    ? 'bg-purple-100 text-purple-700' 
-                                    : 'bg-orange-100 text-orange-700'
-                                }`}>
-                                  {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                                <div
+                                  className={`w-9 h-9 rounded-full font-extrabold flex items-center justify-center text-xs shadow-sm ${
+                                    user.role === "sitter"
+                                      ? "bg-purple-100 text-purple-700"
+                                      : "bg-orange-100 text-orange-700"
+                                  }`}
+                                >
+                                  {user.firstName.charAt(0)}
+                                  {user.lastName.charAt(0)}
                                 </div>
                                 <div>
-                                  <span className="font-black text-gray-900 block text-xs">{user.firstName} {user.lastName}</span>
-                                  <span className="text-[9px] text-gray-400 font-bold block uppercase">UID: {user.id.substring(0, 8)}...</span>
+                                  <span className="font-black text-gray-900 block text-xs">
+                                    {user.firstName} {user.lastName}
+                                  </span>
+                                  <span className="text-[9px] text-gray-400 font-bold block uppercase">
+                                    UID: {user.id.substring(0, 8)}...
+                                  </span>
                                 </div>
                               </div>
                             </td>
 
                             {/* Email */}
-                            <td className="py-4 px-6 text-gray-600 font-semibold">{user.email}</td>
+                            <td className="py-4 px-6 text-gray-600 font-semibold">
+                              {user.email}
+                            </td>
 
                             {/* Role Badge */}
                             <td className="py-4 px-6">
-                              <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
-                                user.role === 'sitter' 
-                                  ? 'bg-purple-100 text-purple-700 border border-purple-200' 
-                                  : 'bg-orange-100 text-[#FF6B00] border border-orange-200'
-                              }`}>
-                                {user.role === 'sitter' ? 'Pet Sitter' : 'Propriétaire'}
+                              <span
+                                className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                  user.role === "sitter"
+                                    ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                    : "bg-orange-100 text-[#FF6B00] border border-orange-200"
+                                }`}
+                              >
+                                {user.role === "sitter"
+                                  ? "Pet Sitter"
+                                  : "Propriétaire"}
                               </span>
                             </td>
 
                             {/* City */}
-                            <td className="py-4 px-6 font-bold text-gray-900">📍 {user.city}</td>
+                            <td className="py-4 px-6 font-bold text-gray-900">
+                              📍 {user.city}
+                            </td>
 
                             {/* Pets Count / Pets info */}
                             <td className="py-4 px-6">
-                              {user.role === 'owner' ? (
+                              {user.role === "owner" ? (
                                 <span className="font-bold text-gray-800">
-                                  {user.pets && user.pets.length > 0 
-                                    ? `${user.pets.length} animal/aux (${user.pets.map(p => p.name).join(', ')})`
-                                    : "Aucun animal"
-                                  }
+                                  {user.pets && user.pets.length > 0
+                                    ? `${user.pets.length} animal/aux (${user.pets.map((p) => p.name).join(", ")})`
+                                    : "Aucun animal"}
                                 </span>
                               ) : (
-                                <span className="text-gray-400 font-medium">Non applicable</span>
+                                <span className="text-gray-400 font-medium">
+                                  Non applicable
+                                </span>
                               )}
                             </td>
 
@@ -959,16 +1114,21 @@ export default function Administration({
                             </td>
 
                             {/* Blocking Actions */}
-                            <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="py-4 px-6 text-right"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {user.isBlocked ? (
                                 <button
                                   type="button"
-                                  onClick={() => setConfirmModal({
-                                    isOpen: true,
-                                    userId: user.id,
-                                    userName: `${user.firstName} ${user.lastName}`,
-                                    action: 'unblock'
-                                  })}
+                                  onClick={() =>
+                                    setConfirmModal({
+                                      isOpen: true,
+                                      userId: user.id,
+                                      userName: `${user.firstName} ${user.lastName}`,
+                                      action: "unblock",
+                                    })
+                                  }
                                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-[10px] font-extrabold rounded-lg transition-colors cursor-pointer shadow-xs"
                                 >
                                   <UserCheck className="w-3.5 h-3.5" />
@@ -977,12 +1137,14 @@ export default function Administration({
                               ) : (
                                 <button
                                   type="button"
-                                  onClick={() => setConfirmModal({
-                                    isOpen: true,
-                                    userId: user.id,
-                                    userName: `${user.firstName} ${user.lastName}`,
-                                    action: 'block'
-                                  })}
+                                  onClick={() =>
+                                    setConfirmModal({
+                                      isOpen: true,
+                                      userId: user.id,
+                                      userName: `${user.firstName} ${user.lastName}`,
+                                      action: "block",
+                                    })
+                                  }
                                   className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-[10px] font-extrabold rounded-lg transition-colors cursor-pointer shadow-xs"
                                 >
                                   <UserX className="w-3.5 h-3.5" />
@@ -997,10 +1159,8 @@ export default function Administration({
                   </div>
                 )}
               </div>
-
             </div>
           )}
-
         </div>
       </main>
 
@@ -1009,24 +1169,37 @@ export default function Administration({
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white rounded-3xl border border-gray-200 shadow-2xl w-full max-w-md overflow-hidden">
             {/* Header */}
-            <div className={`p-5 text-white font-bold flex items-center gap-2 ${
-              confirmModal.action === 'block' ? 'bg-red-600' : 'bg-green-600'
-            }`}>
+            <div
+              className={`p-5 text-white font-bold flex items-center gap-2 ${
+                confirmModal.action === "block" ? "bg-red-600" : "bg-green-600"
+              }`}
+            >
               <ShieldAlert className="w-5 h-5 shrink-0" />
               <h3>
-                {confirmModal.action === 'block' ? "Bloquer l'utilisateur" : "Débloquer l'utilisateur"}
+                {confirmModal.action === "block"
+                  ? "Bloquer l'utilisateur"
+                  : "Débloquer l'utilisateur"}
               </h3>
             </div>
 
             {/* Body */}
             <div className="p-6 space-y-3 text-sm">
               <p className="text-gray-600 font-semibold leading-relaxed">
-                Êtes-vous sûr de vouloir {confirmModal.action === 'block' ? 'bloquer' : 'débloquer'} l'accès de l'utilisateur <strong className="text-gray-900">{confirmModal.userName}</strong> à la plateforme AMUCH ?
+                Êtes-vous sûr de vouloir{" "}
+                {confirmModal.action === "block" ? "bloquer" : "débloquer"}{" "}
+                l'accès de l'utilisateur{" "}
+                <strong className="text-gray-900">
+                  {confirmModal.userName}
+                </strong>{" "}
+                à la plateforme AMUCH ?
               </p>
-              {confirmModal.action === 'block' && (
+              {confirmModal.action === "block" && (
                 <p className="text-xs text-red-600 bg-red-50 p-3 rounded-xl font-bold flex items-start gap-1.5">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>Cet utilisateur sera immédiatement empêché de se connecter à son espace personnel.</span>
+                  <span>
+                    Cet utilisateur sera immédiatement empêché de se connecter à
+                    son espace personnel.
+                  </span>
                 </p>
               )}
             </div>
@@ -1044,12 +1217,14 @@ export default function Administration({
                 type="button"
                 onClick={handleConfirmAction}
                 className={`px-4 py-2 text-white font-black rounded-lg text-xs transition-all cursor-pointer shadow-sm ${
-                  confirmModal.action === 'block' 
-                    ? 'bg-red-600 hover:bg-red-700' 
-                    : 'bg-green-600 hover:bg-green-700'
+                  confirmModal.action === "block"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-green-600 hover:bg-green-700"
                 }`}
               >
-                {confirmModal.action === 'block' ? "Oui, bloquer" : "Oui, débloquer"}
+                {confirmModal.action === "block"
+                  ? "Oui, bloquer"
+                  : "Oui, débloquer"}
               </button>
             </div>
           </div>
@@ -1064,14 +1239,18 @@ export default function Administration({
             <div className="p-6 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase">
-                  {selectedUserDetails.firstName.charAt(0)}{selectedUserDetails.lastName.charAt(0)}
+                  {selectedUserDetails.firstName.charAt(0)}
+                  {selectedUserDetails.lastName.charAt(0)}
                 </div>
                 <div>
                   <h3 className="text-base font-black tracking-tight">
-                    {selectedUserDetails.firstName} {selectedUserDetails.lastName}
+                    {selectedUserDetails.firstName}{" "}
+                    {selectedUserDetails.lastName}
                   </h3>
                   <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-white/20">
-                    {selectedUserDetails.role === 'sitter' ? 'Pet Sitter' : 'Propriétaire'}
+                    {selectedUserDetails.role === "sitter"
+                      ? "Pet Sitter"
+                      : "Propriétaire"}
                   </span>
                 </div>
               </div>
@@ -1089,78 +1268,146 @@ export default function Administration({
               {/* Core Information Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">Adresse Email</span>
-                  <span className="text-xs font-bold text-gray-800 break-all">{selectedUserDetails.email}</span>
-                </div>
-                <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">Numéro de Téléphone</span>
-                  <span className="text-xs font-bold text-gray-800">
-                    {getSitterInfo(selectedUserDetails.id)?.phone || 'Non renseigné'}
+                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                    Adresse Email
+                  </span>
+                  <span className="text-xs font-bold text-gray-800 break-all">
+                    {selectedUserDetails.email}
                   </span>
                 </div>
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">Ville / City</span>
-                  <span className="text-xs font-bold text-gray-800">📍 {selectedUserDetails.city || 'Non spécifiée'}</span>
+                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                    Numéro de Téléphone
+                  </span>
+                  <span className="text-xs font-bold text-gray-800">
+                    {getSitterInfo(selectedUserDetails.id)?.phone ||
+                      "Non renseigné"}
+                  </span>
                 </div>
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">ID Utilisateur (UID)</span>
-                  <span className="text-[10px] font-mono font-bold text-gray-500 break-all">{selectedUserDetails.id}</span>
+                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                    Ville / City
+                  </span>
+                  <span className="text-xs font-bold text-gray-800">
+                    📍 {selectedUserDetails.city || "Non spécifiée"}
+                  </span>
+                </div>
+                <div className="bg-gray-50 p-3.5 rounded-2xl">
+                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                    ID Utilisateur (UID)
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-gray-500 break-all">
+                    {selectedUserDetails.id}
+                  </span>
                 </div>
               </div>
 
               {/* Sitter details if applicable */}
-              {selectedUserDetails.role === 'sitter' && getSitterInfo(selectedUserDetails.id) && (
-                <div className="border-t border-gray-100 pt-4 space-y-3">
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">Détails Professionnels</h4>
-                  <div className="bg-purple-50/50 p-4 rounded-2xl space-y-2">
-                    <p className="text-xs text-gray-700 italic">
-                      "{getSitterInfo(selectedUserDetails.id)?.bio}"
-                    </p>
-                    <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-600 pt-2 border-t border-purple-100">
-                      <div>
-                        <span className="text-gray-400 block uppercase">Prix / Nuit</span>
-                        <span className="text-purple-700 font-extrabold">{getSitterInfo(selectedUserDetails.id)?.pricePerNight} MAD</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 block uppercase">Capacité</span>
-                        <span className="text-purple-700 font-extrabold">{getSitterInfo(selectedUserDetails.id)?.capacityMax} animaux max</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400 block uppercase">Évaluation</span>
-                        <span className="text-purple-700 font-extrabold">⭐ {getSitterInfo(selectedUserDetails.id)?.rating} ({getSitterInfo(selectedUserDetails.id)?.reviewCount} avis)</span>
+              {selectedUserDetails.role === "sitter" &&
+                getSitterInfo(selectedUserDetails.id) && (
+                  <div className="border-t border-gray-100 pt-4 space-y-3">
+                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                      Détails Professionnels
+                    </h4>
+                    <div className="bg-purple-50/50 p-4 rounded-2xl space-y-2">
+                      <p className="text-xs text-gray-700 italic">
+                        "{getSitterInfo(selectedUserDetails.id)?.bio}"
+                      </p>
+                      <div className="grid grid-cols-3 gap-2 text-[10px] font-bold text-gray-600 pt-2 border-t border-purple-100">
+                        <div>
+                          <span className="text-gray-400 block uppercase">
+                            Prix / Nuit
+                          </span>
+                          <span className="text-purple-700 font-extrabold">
+                            {
+                              getSitterInfo(selectedUserDetails.id)
+                                ?.pricePerNight
+                            }{" "}
+                            MAD
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block uppercase">
+                            Capacité
+                          </span>
+                          <span className="text-purple-700 font-extrabold">
+                            {getSitterInfo(selectedUserDetails.id)?.capacityMax}{" "}
+                            animaux max
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block uppercase">
+                            Évaluation
+                          </span>
+                          <span className="text-purple-700 font-extrabold">
+                            ⭐ {getSitterInfo(selectedUserDetails.id)?.rating} (
+                            {getSitterInfo(selectedUserDetails.id)?.reviewCount}{" "}
+                            avis)
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
               {/* Pets Section if Owner */}
-              {selectedUserDetails.role === 'owner' && (
+              {selectedUserDetails.role === "owner" && (
                 <div className="border-t border-gray-100 pt-4 space-y-3">
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">Animaux Associés ({selectedUserDetails.pets?.length || 0})</h4>
-                  {selectedUserDetails.pets && selectedUserDetails.pets.length > 0 ? (
+                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                    Animaux Associés ({selectedUserDetails.pets?.length || 0})
+                  </h4>
+                  {selectedUserDetails.pets &&
+                  selectedUserDetails.pets.length > 0 ? (
                     <div className="space-y-3">
                       {selectedUserDetails.pets.map((pet) => (
-                        <div key={pet.id} className="flex gap-4 p-3 bg-orange-50/50 border border-orange-100 rounded-2xl">
+                        <div
+                          key={pet.id}
+                          className="flex gap-4 p-3 bg-orange-50/50 border border-orange-100 rounded-2xl"
+                        >
                           <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0 overflow-hidden font-bold">
                             {pet.photoUrl ? (
-                              <img src={pet.photoUrl} alt={pet.name} className="w-full h-full object-cover" />
+                              <img
+                                src={pet.photoUrl}
+                                alt={pet.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : pet.type === "chien" ? (
+                              "🐶"
+                            ) : pet.type === "chat" ? (
+                              "🐈"
                             ) : (
-                              pet.type === 'chien' ? '🐶' : pet.type === 'chat' ? '🐈' : '🐰'
+                              "🐰"
                             )}
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs font-black text-gray-800">{pet.name} <span className="text-[10px] font-bold text-orange-500 uppercase">({pet.type})</span></span>
+                            <span className="text-xs font-black text-gray-800">
+                              {pet.name}{" "}
+                              <span className="text-[10px] font-bold text-orange-500 uppercase">
+                                ({pet.type})
+                              </span>
+                            </span>
                             <div className="text-[10px] font-semibold text-gray-500 flex gap-3">
-                              <span>Race: <strong className="text-gray-700">{pet.breed || 'Non spécifiée'}</strong></span>
-                              <span>Âge: <strong className="text-gray-700">{pet.age || 'Non spécifié'}</strong></span>
+                              <span>
+                                Race:{" "}
+                                <strong className="text-gray-700">
+                                  {pet.breed || "Non spécifiée"}
+                                </strong>
+                              </span>
+                              <span>
+                                Âge:{" "}
+                                <strong className="text-gray-700">
+                                  {pet.age || "Non spécifié"}
+                                </strong>
+                              </span>
                             </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400 font-bold italic">Aucun animal de compagnie enregistré pour ce propriétaire.</p>
+                    <p className="text-xs text-gray-400 font-bold italic">
+                      Aucun animal de compagnie enregistré pour ce propriétaire.
+                    </p>
                   )}
                 </div>
               )}
@@ -1179,7 +1426,6 @@ export default function Administration({
           </div>
         </div>
       )}
-
     </div>
   );
 }
