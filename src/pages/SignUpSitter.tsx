@@ -137,7 +137,9 @@ export default function SignUpSitter({
       try {
         const newSitter = await signUpSitterWithAuth(email, password, sitterData);
         setIsSubmitted(true);
-        onSignUpComplete(newSitter);
+        setTimeout(() => {
+          onSignUpComplete(newSitter);
+        }, 1500);
       } catch (err: any) {
         console.error(err);
         if (err?.message === 'EMAIL_ALREADY_EXISTS' || err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {

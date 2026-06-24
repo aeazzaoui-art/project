@@ -49,6 +49,7 @@ import Administration from "./pages/Administration";
 
 import { useFirestoreRealtime } from "./lib/useFirestoreRealtime";
 import { Loader2 } from "lucide-react";
+import { auth } from "./firebase";
 
 export default function App() {
   const {
@@ -68,10 +69,21 @@ export default function App() {
     return (saved as Language) || "FR";
   });
 
-  const [activePage, setActivePage] = useState<ActivePage>(() => {
+  const [activePage, _setActivePage] = useState<ActivePage>(() => {
     const saved = localStorage.getItem("amuch_active_page");
     return (saved as ActivePage) || "home";
   });
+
+  const [isPageTransitioning, setIsPageTransitioning] = useState(false);
+
+  const setActivePage = (page: ActivePage) => {
+    setIsPageTransitioning(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      _setActivePage(page);
+      setIsPageTransitioning(false);
+    }, 150);
+  };
 
   const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
 
@@ -117,22 +129,32 @@ export default function App() {
   // Sync auth data
   useEffect(() => {
     if (!authLoading) {
-      if (realtimeCurrentUser && realtimeCurrentUser.isBlocked) {
-        // Log out the blocked user
-        logoutWithAuth().catch(console.error);
-        setCurrentUser(null);
-        setCurrentSitterUser(null);
-        setActivePage("home");
-        localStorage.removeItem("amuch_user");
-        localStorage.removeItem("amuch_sitter_user");
-        alert(
-          language === "FR"
-            ? "Votre compte a été suspendu par l'administrateur de la plateforme."
-            : "تم تعليق حسابك من قبل المسؤول.",
-        );
+      if (realtimeCurrentUser) {
+        if (realtimeCurrentUser.isBlocked) {
+          // Log out the blocked user
+          logoutWithAuth().catch(console.error);
+          setCurrentUser(null);
+          setCurrentSitterUser(null);
+          setActivePage("home");
+          localStorage.removeItem("amuch_user");
+          localStorage.removeItem("amuch_sitter_user");
+          alert(
+            language === "FR"
+              ? "Votre compte a été suspendu par l'administrateur de la plateforme."
+              : "تم تعليق حسابك من قبل المسؤول.",
+          );
+        } else {
+          setCurrentUser(realtimeCurrentUser);
+          setCurrentSitterUser(realtimeCurrentSitterUser);
+        }
       } else {
-        setCurrentUser(realtimeCurrentUser);
-        setCurrentSitterUser(realtimeCurrentSitterUser);
+        // If realtimeCurrentUser is null but Firebase Auth has an active session,
+        // we might be in the middle of a signup or login write/propagate transition.
+        // We only clear local states if there is genuinely no authenticated user at all.
+        if (!auth.currentUser) {
+          setCurrentUser(null);
+          setCurrentSitterUser(null);
+        }
       }
     }
   }, [realtimeCurrentUser, realtimeCurrentSitterUser, authLoading, language]);
@@ -162,7 +184,7 @@ export default function App() {
     const path = window.location.pathname;
     if (activePage === "administration") {
       if (path !== "/adminstration" && path !== "/administration") {
-        window.history.pushState({}, "", "/adminstration");
+        window.history.pushState({}, "", "/administration");
       }
     } else {
       if (path === "/adminstration" || path === "/administration") {
@@ -421,28 +443,25 @@ export default function App() {
   const handleOwnerSignUpComplete = (user: User) => {
     setCurrentUser(user);
     setCurrentSitterUser(null);
-    saveUser(user); // Save to Firestore API
     setActivePage("owner-dashboard");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // On completing Sitter Registration
   const handleSitterSignUpComplete = (sitter: Sitter) => {
-    // Create a mock logged-in User wrapper for Sitter
+    const authEmail = auth.currentUser?.email || `${sitter.firstName.toLowerCase()}@amuch.ma`;
     const sitterUser: User = {
       id: sitter.id,
       firstName: sitter.firstName,
       lastName: sitter.lastName,
-      email: `${sitter.firstName.toLowerCase()}@amuch.ma`,
+      email: authEmail,
       role: "sitter",
       city: sitter.city,
       pets: [],
     };
     setCurrentUser(sitterUser);
     setCurrentSitterUser(sitter);
-    setSitters((prev) => [sitter, ...prev]); // Add to sitters list state
-    saveUser(sitterUser); // Save user to Firestore API
-    saveSitter(sitter); // Save sitter to Firestore API
+    // Note: useFirestoreRealtime handles adding/syncing the new sitter in list state automatically
     setActivePage("sitter-dashboard");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

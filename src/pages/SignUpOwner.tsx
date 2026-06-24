@@ -61,6 +61,7 @@ export default function SignUpOwner({
   // General errors
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Handle adding another pet
@@ -134,7 +135,10 @@ export default function SignUpOwner({
       };
       
       const newUser = await signUpOwnerWithAuth(email, password, userData);
-      onSignUpComplete(newUser);
+      setIsSubmitted(true);
+      setTimeout(() => {
+        onSignUpComplete(newUser);
+      }, 1500);
     } catch (err: any) {
       console.error(err);
       if (err?.message === 'EMAIL_ALREADY_EXISTS' || err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
@@ -330,6 +334,21 @@ export default function SignUpOwner({
             isEmbedded={true}
             onStepChange={setSitterStep}
           />
+        ) : isSubmitted ? (
+          <div className="bg-white border border-[#E0E0E0] rounded-3xl p-8 text-center shadow-xl space-y-6">
+            <div className="w-20 h-20 rounded-full bg-green-500 text-white flex items-center justify-center mx-auto text-4xl animate-bounce">
+              ✓
+            </div>
+            <h2 className="text-2xl font-black text-[#111111]">
+              {language === 'FR' ? "Compte créé avec succès !" : language === 'AR' ? "تم إنشاء الحساب بنجاح!" : "Account Created Successfully!"}
+            </h2>
+            <div className="bg-green-50 border border-green-100 p-5 rounded-2xl max-w-md mx-auto text-sm font-bold text-green-800 leading-relaxed">
+              {language === 'FR' ? "Votre profil a été enregistré avec succès." : language === 'AR' ? "تم حفظ ملفك الشخصي بنجاح." : "Your profile has been saved successfully."}
+            </div>
+            <p className="text-xs text-gray-500 animate-pulse">
+              {language === 'FR' ? "Redirection vers votre tableau de bord en cours..." : language === 'AR' ? "جاري التوجيه إلى لوحة التحكم الخاصة بك..." : "Redirecting to your dashboard shortly..."}
+            </p>
+          </div>
         ) : (
           <div className="bg-white border border-[#E0E0E0] rounded-3xl p-6 sm:p-10 shadow-md">
           
