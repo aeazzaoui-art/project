@@ -26,13 +26,17 @@ service cloud.firestore {
     // Rules for User profiles
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow write: if isAdmin() || (isSignedIn() && (request.auth.uid == userId || resource == null));
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId);
+      allow delete: if isAdmin();
     }
 
     // Rules for Sitter profiles
     match /sitters/{sitterId} {
       allow read: if true; // Publicly searchable
-      allow write: if isAdmin() || (isSignedIn() && (request.auth.uid == sitterId || resource == null));
+      allow create: if isSignedIn() && request.auth.uid == sitterId;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == sitterId);
+      allow delete: if isAdmin();
     }
 
     // Rules for Bookings

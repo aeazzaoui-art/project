@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserCheck, Sparkles, FileText, Smartphone, Shield, ArrowRight, ArrowLeft, Upload, Check, Coins } from 'lucide-react';
+import { UserCheck, Sparkles, FileText, Smartphone, Shield, ArrowRight, ArrowLeft, Upload, Check, Coins, Loader2 } from 'lucide-react';
 import { Language, User, Sitter, AnimalType } from '../types';
 import { translations } from '../translations';
 import { signUpSitterWithAuth } from '../lib/firebaseService';
@@ -196,6 +196,16 @@ export default function SignUpSitter({
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 text-sm font-bold mb-6 text-center">
             ⚠️ {error}
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-[#FF6B00]" />
+            <p className="font-black text-[#111111] animate-pulse uppercase tracking-widest text-xs">
+              {language === 'FR' ? "Traitement en cours..." : "Processing..."}
+            </p>
           </div>
         )}
 

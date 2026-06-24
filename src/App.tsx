@@ -496,6 +496,13 @@ export default function App() {
   }
 
   if (activePage === "administration") {
+    if (realtimeLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
+          <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />
+        </div>
+      );
+    }
     return (
       <Administration
         language={language}

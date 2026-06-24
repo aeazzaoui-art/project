@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserPlus, Sparkles, CheckCircle, ArrowRight, ArrowLeft, Upload, FileCheck, HelpCircle, LogIn } from 'lucide-react';
+import { UserPlus, Sparkles, CheckCircle, ArrowRight, ArrowLeft, Upload, FileCheck, HelpCircle, LogIn, Loader2 } from 'lucide-react';
 import { Language, User, Pet, AnimalType, Sitter } from '../types';
 import { translations } from '../translations';
 import { SITTERS } from '../data';
@@ -326,6 +326,16 @@ export default function SignUpOwner({
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4 text-sm font-bold mb-6 text-center animate-pulse">
             ⚠️ {error}
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex flex-col items-center justify-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-[#FF6B00]" />
+            <p className="font-black text-[#111111] animate-pulse uppercase tracking-widest text-xs">
+              {language === 'FR' ? "Traitement en cours..." : language === 'AR' ? "جاري المعالجة..." : "Processing..."}
+            </p>
           </div>
         )}
 

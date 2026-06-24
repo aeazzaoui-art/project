@@ -13,7 +13,8 @@ import {
   query, 
   where, 
   orderBy, 
-  addDoc 
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 import { 
   createUserWithEmailAndPassword, 
@@ -433,4 +434,29 @@ export async function addReviewToFirestore(review: Review): Promise<void> {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
+
+/**
+ * Reset all platform data (except the admin user)
+ */
+export async function resetPlatformData(): Promise<void> {
+  const collectionsToClear = ['bookings', 'reviews', 'messages', 'sitters', 'users'];
+  
+  for (const colName of collectionsToClear) {
+    try {
+      const colRef = collection(db, colName);
+      const snapshot = await getDocs(colRef);
+      
+      for (const docSnap of snapshot.docs) {
+        // Don't delete the admin user profile
+        if (colName === 'users' && docSnap.data().email === 'aeazzaoui@gmail.com') {
+          continue;
+        }
+        await deleteDoc(doc(db, colName, docSnap.id));
+      }
+    } catch (err) {
+      console.error(`Error clearing ${colName}:`, err);
+    }
+  }
+}
+
 

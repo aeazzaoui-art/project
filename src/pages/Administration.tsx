@@ -24,12 +24,14 @@ import {
   UserX,
   UserCheck,
   ChevronRight,
+  Loader2
 } from "lucide-react";
 import { Language, User, Sitter, Booking } from "../types";
 import {
   getAllUsersFromFirestore,
   updateUserBlockStatus,
-  adminLoginWithAuth
+  adminLoginWithAuth,
+  resetPlatformData
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -59,9 +61,29 @@ export default function Administration({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance">(
     "dashboard",
   );
+
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetDatabase = async () => {
+    if (!window.confirm(language === "FR" ? "Êtes-vous sûr de vouloir supprimer TOUTES les données de la plateforme ? Cette action est irréversible." : "Are you sure you want to delete ALL platform data? This cannot be undone.")) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      await resetPlatformData();
+      alert(language === "FR" ? "Base de données réinitialisée avec succès." : "Database reset successfully.");
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert(language === "FR" ? "Erreur lors de la réinitialisation." : "Error during reset.");
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   // Search & Filters state
   const [searchTerm, setSearchTerm] = useState("");
@@ -467,6 +489,18 @@ export default function Administration({
             <Users className="w-4 h-4" />
             Utilisateurs ({users.length})
           </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("maintenance")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === "maintenance"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Maintenance
+          </button>
         </nav>
 
         {/* Sidebar Footer */}
@@ -501,6 +535,10 @@ export default function Administration({
             </h2>
           </div>
           <div className="flex items-center gap-4 text-xs font-semibold text-gray-400">
+            <span>
+              {activeTab === "maintenance" ? (language === "FR" ? "Outils système & nettoyage" : "System Tools & Cleanup") : ""}
+            </span>
+            <div className="h-4 w-px bg-gray-200"></div>
             <span>
               {new Date().toLocaleDateString(
                 language === "FR" ? "fr-FR" : "ar-MA",
@@ -1169,6 +1207,63 @@ export default function Administration({
                     </table>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: MAINTENANCE */}
+          {activeTab === "maintenance" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+                <div className="max-w-xl space-y-8">
+                  <div className="space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center mb-4">
+                      <ShieldAlert className="w-6 h-6" />
+                    </div>
+                    <h2 className="text-2xl font-black text-[#111111] tracking-tight">
+                      Maintenance du Système
+                    </h2>
+                    <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                      Outils avancés pour la gestion de l'intégrité des données et le nettoyage de la plateforme. 
+                      Utilisez ces fonctions avec prudence.
+                    </p>
+                  </div>
+
+                  <div className="bg-red-50/50 border border-red-100 rounded-3xl p-8 space-y-6">
+                    <div className="flex items-center gap-4 text-red-700">
+                      <div className="p-3 bg-red-100 rounded-xl">
+                        <AlertTriangle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="font-black text-lg text-red-700">Réinitialisation d'Usine</h4>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Action Irréversible</p>
+                      </div>
+                    </div>
+                    
+                    <p className="text-xs text-red-600 font-bold leading-relaxed">
+                      Cette action supprimera toutes les réservations, les avis, les messages, les profils sitters 
+                      et tous les profils utilisateurs (sauf aeazzaoui@gmail.com). 
+                      Les comptes Auth Firebase ne sont pas affectés mais n'auront plus de profil lié.
+                    </p>
+
+                    <div className="pt-4">
+                      <button
+                        onClick={handleResetDatabase}
+                        disabled={isResetting}
+                        className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl transition-all shadow-lg shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-3 cursor-pointer group"
+                      >
+                        {isResetting ? (
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                          <ShieldAlert className="w-5 h-5 group-hover:animate-shake" />
+                        )}
+                        <span>
+                          {isResetting ? "NETTOYAGE EN COURS..." : "RÉINITIALISER TOUTE LA PLATEFORME"}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}
