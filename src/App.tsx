@@ -64,34 +64,16 @@ export default function App() {
 
   const [bookings, setBookings] = useState<Booking[]>(() => {
     const saved = localStorage.getItem('amuch_bookings');
-    if (saved) return JSON.parse(saved);
-    
-    // Seed initial demo booking
-    return [
-      {
-        id: 'booking-seed-1',
-        sitterId: 'sitter-1',
-        sitterName: 'Anass El Mansouri',
-        ownerId: 'owner-default',
-        ownerName: 'Salma Benkirane',
-        petName: 'Lily',
-        petType: 'chat',
-        city: 'Casablanca',
-        startDate: '2026-06-24',
-        endDate: '2026-06-28',
-        totalPrice: 600,
-        status: 'pending'
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   // Active selected sitter for detail profile view
-  const [sitters, setSitters] = useState<Sitter[]>(SITTERS);
-  const [reviews, setReviews] = useState<Review[]>(REVIEWS);
+  const [sitters, setSitters] = useState<Sitter[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
 
   const [selectedSitter, setSelectedSitter] = useState<Sitter | null>(() => {
     const saved = localStorage.getItem('amuch_selected_sitter');
-    return saved ? JSON.parse(saved) : SITTERS[0];
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [activeChatPartnerId, setActiveChatPartnerId] = useState<string | null>(null);
@@ -141,18 +123,20 @@ export default function App() {
     const syncPathWithPage = () => {
       const path = window.location.pathname;
       if (path === '/administration' || path === '/adminstration') {
-        if (activePage !== 'administration') {
-          setActivePage('administration');
-        }
+        setActivePage('administration');
       } else if (activePage === 'administration') {
         setActivePage('home');
       }
     };
 
-    syncPathWithPage();
     window.addEventListener('popstate', syncPathWithPage);
+    // Run once on mount to handle direct URL visits
+    const initialPath = window.location.pathname;
+    if (initialPath === '/administration' || initialPath === '/adminstration') {
+      setActivePage('administration');
+    }
     return () => window.removeEventListener('popstate', syncPathWithPage);
-  }, [activePage]);
+  }, []);
 
   // Push Page state to browser history pathname
   useEffect(() => {

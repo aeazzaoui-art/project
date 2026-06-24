@@ -244,8 +244,25 @@ export async function updateUserBlockStatus(userId: string, isBlocked: boolean):
 }
 
 /**
+ * Fetch a single Sitter by ID.
+ */
+export async function getSitter(sitterId: string): Promise<Sitter | null> {
+  const path = `sitters/${sitterId}`;
+  try {
+    const docRef = doc(db, 'sitters', sitterId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      return docSnap.data() as Sitter;
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return null;
+  }
+}
+
+/**
  * Fetch all Sitters.
- * If Firestore has no sitters, we automatically seed them from SITTERS in data.ts!
  */
 export async function getSitters(): Promise<Sitter[]> {
   const path = 'sitters';
@@ -254,12 +271,7 @@ export async function getSitters(): Promise<Sitter[]> {
     const snapshot = await getDocs(sittersCol);
     
     if (snapshot.empty) {
-      console.log('No sitters found in Firestore. Seeding sitters list...');
-      // Seed sitters
-      for (const sitter of SITTERS) {
-        await setDoc(doc(db, 'sitters', sitter.id), sitter);
-      }
-      return SITTERS;
+      return [];
     }
     
     const list: Sitter[] = [];
@@ -269,7 +281,7 @@ export async function getSitters(): Promise<Sitter[]> {
     return list;
   } catch (error) {
     handleFirestoreError(error, OperationType.LIST, path);
-    return SITTERS; // Fallback unreachable due to throw but kept for TS
+    return []; // Fallback unreachable due to throw but kept for TS
   }
 }
 
@@ -287,7 +299,6 @@ export async function saveSitter(sitter: Sitter): Promise<void> {
 
 /**
  * Fetch all Bookings.
- * If empty, we seed with initial demo bookings.
  */
 export async function getBookings(): Promise<Booking[]> {
   const path = 'bookings';
@@ -296,23 +307,7 @@ export async function getBookings(): Promise<Booking[]> {
     const snapshot = await getDocs(bookingsCol);
     
     if (snapshot.empty) {
-      console.log('No bookings found in Firestore. Seeding default demo booking...');
-      const seedBooking: Booking = {
-        id: 'booking-seed-1',
-        sitterId: 'sitter-1',
-        sitterName: 'Anass El Mansouri',
-        ownerId: 'owner-default',
-        ownerName: 'Salma Benkirane',
-        petName: 'Lily',
-        petType: 'chat',
-        city: 'Casablanca',
-        startDate: '2026-06-24',
-        endDate: '2026-06-28',
-        totalPrice: 600,
-        status: 'pending'
-      };
-      await setDoc(doc(db, 'bookings', seedBooking.id), seedBooking);
-      return [seedBooking];
+      return [];
     }
     
     const list: Booking[] = [];

@@ -8,7 +8,7 @@ import { UserPlus, Sparkles, CheckCircle, ArrowRight, ArrowLeft, Upload, FileChe
 import { Language, User, Pet, AnimalType, Sitter } from '../types';
 import { translations } from '../translations';
 import { SITTERS } from '../data';
-import { signUpOwnerWithAuth, loginWithAuth } from '../lib/firebaseService';
+import { signUpOwnerWithAuth, loginWithAuth, getSitter } from '../lib/firebaseService';
 import SignUpSitter from './SignUpSitter';
 
 interface SignUpOwnerProps {
@@ -174,7 +174,11 @@ export default function SignUpOwner({
       
       localStorage.setItem('amuch_user', JSON.stringify(loggedUser));
       if (loggedUser.role === 'sitter') {
-        const matchedSitter = SITTERS.find(s => s.id === loggedUser.id) || SITTERS[0];
+        let matchedSitter = await getSitter(loggedUser.id);
+        if (!matchedSitter) {
+          // Fallback if not found, though should exist
+          matchedSitter = SITTERS.find(s => s.id === loggedUser.id) || SITTERS[0];
+        }
         localStorage.setItem('amuch_sitter_user', JSON.stringify(matchedSitter));
       } else {
         localStorage.removeItem('amuch_sitter_user');
