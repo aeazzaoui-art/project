@@ -120,6 +120,37 @@ export async function signUpSitterWithAuth(email: string, password: string, sitt
 }
 
 /**
+ * Login specifically for admin
+ */
+export async function adminLoginWithAuth(email: string, password: string): Promise<void> {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+  } catch (err: any) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      try {
+        await createUserWithEmailAndPassword(auth, email, password);
+        const uid = auth.currentUser?.uid;
+        if (uid) {
+          await saveUser({
+            id: uid,
+            firstName: "Admin",
+            lastName: "System",
+            email,
+            role: "owner", // Using standard role, but email gives admin rights via rules
+            city: "Casablanca",
+            pets: []
+          });
+        }
+      } catch (createErr) {
+        throw createErr;
+      }
+    } else {
+      throw err;
+    }
+  }
+}
+
+/**
  * Login with Firebase Auth and fetch User profile from Firestore
  */
 export async function loginWithAuth(email: string, password: string): Promise<User> {

@@ -29,6 +29,7 @@ import { Language, User, Sitter, Booking } from "../types";
 import {
   getAllUsersFromFirestore,
   updateUserBlockStatus,
+  adminLoginWithAuth
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -85,15 +86,25 @@ export default function Administration({
   );
 
   // Handle Login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError("");
     setIsLoggingIn(true);
 
     // Hardcoded requested credentials
     if (email.trim() === "aeazzaoui@gmail.com" && password === "Abdou9708") {
-      setIsAdminLoggedIn(true);
-      sessionStorage.setItem("amuch_admin_logged_in", "true");
+      try {
+        await adminLoginWithAuth(email.trim(), password);
+        setIsAdminLoggedIn(true);
+        sessionStorage.setItem("amuch_admin_logged_in", "true");
+      } catch (err) {
+        console.error("Admin login failed", err);
+        setLoginError(
+          language === "FR"
+            ? "Erreur de connexion Firebase. Vérifiez la console."
+            : "خطأ في تسجيل الدخول. تحقق من وحدة التحكم."
+        );
+      }
       setIsLoggingIn(false);
     } else {
       setLoginError(

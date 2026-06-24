@@ -145,7 +145,11 @@ export default function App() {
           );
         } else {
           setCurrentUser(realtimeCurrentUser);
-          setCurrentSitterUser(realtimeCurrentSitterUser);
+          if (realtimeCurrentSitterUser) {
+            setCurrentSitterUser(realtimeCurrentSitterUser);
+          } else if (realtimeCurrentUser.role !== "sitter") {
+            setCurrentSitterUser(null);
+          }
         }
       } else {
         // If realtimeCurrentUser is null but Firebase Auth has an active session,
@@ -554,9 +558,8 @@ export default function App() {
             onLoginComplete={(user) => {
               setCurrentUser(user);
               if (user.role === "sitter") {
-                const matched =
-                  sitters.find((s) => s.id === user.id) || sitters[0];
-                setCurrentSitterUser(matched);
+                const matched = sitters.find((s) => s.id === user.id);
+                if (matched) setCurrentSitterUser(matched);
                 setActivePage("sitter-dashboard");
               } else {
                 setCurrentSitterUser(null);
@@ -574,39 +577,51 @@ export default function App() {
           />
         )}
 
-        {activePage === "owner-dashboard" && currentUser && (
-          <OwnerDashboard
-            language={language}
-            currentUser={currentUser}
-            onLogout={handleLogout}
-            bookings={bookings.filter(
-              (b) =>
-                b.ownerId === currentUser.id || b.ownerId === "owner-default",
-            )}
-            chats={[]}
-            onAddPet={handleAddPetToUser}
-            onNavigateToChat={() => setActivePage("chat")}
-          />
+        {activePage === "owner-dashboard" && (
+          currentUser ? (
+            <OwnerDashboard
+              language={language}
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              bookings={bookings.filter(
+                (b) =>
+                  b.ownerId === currentUser.id || b.ownerId === "owner-default",
+              )}
+              chats={[]}
+              onAddPet={handleAddPetToUser}
+              onNavigateToChat={() => setActivePage("chat")}
+            />
+          ) : (
+            <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
+              <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />
+            </div>
+          )
         )}
 
-        {activePage === "sitter-dashboard" && currentSitterUser && (
-          <SitterDashboard
-            language={language}
-            currentSitter={currentSitterUser}
-            onLogout={handleLogout}
-            bookings={bookings.filter(
-              (b) =>
-                b.sitterId === currentSitterUser.id ||
-                b.sitterId === "sitter-1",
-            )}
-            onUpdateBookingStatus={handleUpdateBookingStatus}
-            onNavigateToChat={() => setActivePage("chat")}
-            reviews={reviews.filter(
-              (r) =>
-                r.sitterId === currentSitterUser.id ||
-                r.sitterId === "sitter-1",
-            )}
-          />
+        {activePage === "sitter-dashboard" && (
+          currentSitterUser ? (
+            <SitterDashboard
+              language={language}
+              currentSitter={currentSitterUser}
+              onLogout={handleLogout}
+              bookings={bookings.filter(
+                (b) =>
+                  b.sitterId === currentSitterUser.id ||
+                  b.sitterId === "sitter-1",
+              )}
+              onUpdateBookingStatus={handleUpdateBookingStatus}
+              onNavigateToChat={() => setActivePage("chat")}
+              reviews={reviews.filter(
+                (r) =>
+                  r.sitterId === currentSitterUser.id ||
+                  r.sitterId === "sitter-1",
+              )}
+            />
+          ) : (
+            <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
+              <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />
+            </div>
+          )
         )}
 
         {activePage === "chat" && (
