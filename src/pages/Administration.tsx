@@ -122,6 +122,7 @@ export default function Administration({
   const [selectedUserDetails, setSelectedUserDetails] = useState<User | null>(
     null,
   );
+  const [viewingImage, setViewingImage] = useState<string | null>(null);
 
   // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
@@ -1471,7 +1472,13 @@ export default function Administration({
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase overflow-hidden">
+                <div 
+                  className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase overflow-hidden cursor-pointer hover:opacity-90"
+                  onClick={() => {
+                    const photo = (selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl);
+                    if (photo) setViewingImage(photo);
+                  }}
+                >
                   {(selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl) ? (
                     <img 
                       src={(selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl) || ""} 
@@ -1609,7 +1616,10 @@ export default function Administration({
                           key={pet.id}
                           className="flex gap-4 p-3 bg-orange-50/50 border border-orange-100 rounded-2xl"
                         >
-                          <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0 overflow-hidden font-bold">
+                          <div 
+                            className={`w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0 overflow-hidden font-bold ${pet.photoUrl ? "cursor-pointer hover:opacity-80" : ""}`}
+                            onClick={() => pet.photoUrl && setViewingImage(pet.photoUrl)}
+                          >
                             {pet.photoUrl ? (
                               <img
                                 src={pet.photoUrl}
@@ -1669,6 +1679,19 @@ export default function Administration({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {/* Image Viewing Modal Overlay */}
+      {viewingImage && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setViewingImage(null)}
+        >
+          <img
+            src={viewingImage}
+            alt="Enlarged view"
+            className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg"
+          />
         </div>
       )}
     </div>
