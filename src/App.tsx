@@ -624,6 +624,28 @@ export default function App() {
                   r.sitterId === "sitter-1",
               )}
             />
+          ) : !realtimeLoading ? (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F7F7] p-8 text-center">
+              <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md border border-gray-100">
+                <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                  ⚠️
+                </div>
+                <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">
+                  {language === "FR" ? "Profil Introuvable" : "Profile Not Found"}
+                </h3>
+                <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">
+                  {language === "FR" 
+                    ? "Nous n'avons pas trouvé votre profil de Sitter. Si vous avez réinitialisé les données, veuillez vous réinscrire."
+                    : "لم نتمكن من العثور على ملفك الشخصي. إذا قمت بإعادة تعيين البيانات، يرجى التسجيل مرة أخرى."}
+                </p>
+                <button
+                  onClick={() => setActivePage("signup-sitter")}
+                  className="w-full py-4 bg-[#FF6B00] text-white font-extrabold rounded-2xl shadow-lg hover:bg-[#E55A00] transition-all transform hover:scale-[1.02]"
+                >
+                  {language === "FR" ? "Se réinscrire comme Sitter" : "التسجيل كمجالس مرة أخرى"}
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
               <Loader2 className="w-10 h-10 animate-spin text-[#FF6B00]" />

@@ -78,8 +78,23 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
  */
 export async function signUpOwnerWithAuth(email: string, password: string, userData: Omit<User, 'id'>): Promise<User> {
   const normalizedEmail = email.trim().toLowerCase();
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = userCredential.user.uid;
+  let uid: string;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    uid = userCredential.user.uid;
+  } catch (err: any) {
+    if (err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        uid = userCredential.user.uid;
+      } catch (signInErr) {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
+
   const newUser: User = {
     ...userData,
     email: normalizedEmail, // Save normalized email
@@ -94,8 +109,22 @@ export async function signUpOwnerWithAuth(email: string, password: string, userD
  */
 export async function signUpSitterWithAuth(email: string, password: string, sitterData: Omit<Sitter, 'id'>): Promise<Sitter> {
   const normalizedEmail = email.trim().toLowerCase();
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const uid = userCredential.user.uid;
+  let uid: string;
+  try {
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    uid = userCredential.user.uid;
+  } catch (err: any) {
+    if (err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        uid = userCredential.user.uid;
+      } catch (signInErr) {
+        throw err;
+      }
+    } else {
+      throw err;
+    }
+  }
   
   // Create Sitter Object
   const newSitter: Sitter = {

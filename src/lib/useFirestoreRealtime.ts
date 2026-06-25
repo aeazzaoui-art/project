@@ -29,8 +29,16 @@ export function useFirestoreRealtime() {
     const auth = getAuth();
 
     const unsubscribeAuth = onAuthStateChanged(auth, (authUser) => {
+      // Cleanup previous listeners if auth state changes
+      if (unsubscribeUsers) unsubscribeUsers();
+      if (unsubscribeSitters) unsubscribeSitters();
+      if (unsubscribeBookings) unsubscribeBookings();
+      if (unsubscribeReviews) unsubscribeReviews();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+      if (unsubscribeSitterDoc) unsubscribeSitterDoc();
+
       if (authUser) {
-        // Subscribe to current user's document
+        // 1. Current user's profile documents
         unsubscribeUserDoc = onSnapshot(
           doc(db, "users", authUser.uid),
           (docSnap) => {
@@ -38,7 +46,6 @@ export function useFirestoreRealtime() {
               const userData = docSnap.data() as User;
               setCurrentUser(userData);
 
-              // If they are a sitter, subscribe to sitter doc
               if (userData.role === "sitter") {
                 unsubscribeSitterDoc = onSnapshot(
                   doc(db, "sitters", authUser.uid),
@@ -51,7 +58,6 @@ export function useFirestoreRealtime() {
                   },
                 );
               } else {
-                if (unsubscribeSitterDoc) unsubscribeSitterDoc();
                 setCurrentSitterUser(null);
               }
             } else {
@@ -61,58 +67,67 @@ export function useFirestoreRealtime() {
             setAuthLoading(false);
           },
         );
+
+        // 2. Data Listeners (Admin vs Regular User)
+        const isAdmin = authUser.email === 'aeazzaoui@gmail.com';
+        
+        if (isAdmin) {
+          unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+            const usersList: User[] = [];
+            snapshot.forEach((doc) => usersList.push(doc.data() as User));
+            setUsers(usersList);
+          });
+
+          unsubscribeBookings = onSnapshot(collection(db, "bookings"), (snapshot) => {
+            const bookingsList: Booking[] = [];
+            snapshot.forEach((doc) => bookingsList.push(doc.data() as Booking));
+            setBookings(bookingsList);
+          });
+        } else {
+          // Regular user filters
+          const q1 = query(collection(db, "bookings"), where("ownerId", "==", authUser.uid));
+          const q2 = query(collection(db, "bookings"), where("sitterId", "==", authUser.uid));
+
+          const u1 = onSnapshot(q1, (snap) => {
+            const list = snap.docs.map(d => d.data() as Booking);
+            setBookings(prev => [...list, ...prev.filter(b => b.sitterId === authUser.uid)]);
+          });
+          const u2 = onSnapshot(q2, (snap) => {
+            const list = snap.docs.map(d => d.data() as Booking);
+            setBookings(prev => [...list, ...prev.filter(b => b.ownerId === authUser.uid)]);
+          });
+          unsubscribeBookings = () => { u1(); u2(); };
+
+          unsubscribeUsers = onSnapshot(doc(db, "users", authUser.uid), (docSnap) => {
+            if (docSnap.exists()) setUsers([docSnap.data() as User]);
+          });
+        }
       } else {
+        // Not logged in
         setCurrentUser(null);
         setCurrentSitterUser(null);
-        if (unsubscribeUserDoc) unsubscribeUserDoc();
-        if (unsubscribeSitterDoc) unsubscribeSitterDoc();
+        setUsers([]);
+        setBookings([]);
         setAuthLoading(false);
       }
-    });
 
-    try {
-      unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-        const usersList: User[] = [];
-        snapshot.forEach((doc) => {
-          usersList.push(doc.data() as User);
-        });
-        setUsers(usersList);
-      });
-
+      // Public listeners (always active)
       unsubscribeSitters = onSnapshot(collection(db, "sitters"), (snapshot) => {
         const sittersList: Sitter[] = [];
-        snapshot.forEach((doc) => {
-          sittersList.push(doc.data() as Sitter);
-        });
+        snapshot.forEach((doc) => sittersList.push(doc.data() as Sitter));
         setSitters(sittersList);
       });
 
-      unsubscribeBookings = onSnapshot(
-        collection(db, "bookings"),
-        (snapshot) => {
-          const bookingsList: Booking[] = [];
-          snapshot.forEach((doc) => {
-            bookingsList.push(doc.data() as Booking);
-          });
-          setBookings(bookingsList);
-        },
-      );
-
       unsubscribeReviews = onSnapshot(collection(db, "reviews"), (snapshot) => {
         const reviewsList: Review[] = [];
-        snapshot.forEach((doc) => {
-          reviewsList.push(doc.data() as Review);
-        });
+        snapshot.forEach((doc) => reviewsList.push(doc.data() as Review));
         setReviews(reviewsList);
         setLoading(false);
       }, (error) => {
-        console.error("Error fetching reviews:", error);
+        console.error("Reviews listener error:", error);
         setLoading(false);
       });
-    } catch (err) {
-      console.error("Error setting up real-time listeners:", err);
-      setLoading(false);
-    }
+    });
 
     return () => {
       if (unsubscribeUsers) unsubscribeUsers();

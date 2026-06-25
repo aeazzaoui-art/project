@@ -65,6 +65,12 @@ export default function Administration({
     "dashboard",
   );
 
+  // Date Range for Statistics
+  const [dateRange, setDateRange] = useState({
+    start: "2026-01-01",
+    end: new Date().toISOString().split("T")[0]
+  });
+
   const [isResetting, setIsResetting] = useState(false);
 
   const handleResetDatabase = async () => {
@@ -174,11 +180,22 @@ export default function Administration({
   };
 
   // --- STATS CALCULATIONS ---
-  // Total reservations
-  const totalReservations = bookings.length;
+  // Filter bookings by date range
+  const filteredBookings = bookings.filter((b) => {
+    if (!b.startDate) return true;
+    const start = dateRange.start ? new Date(dateRange.start).getTime() : 0;
+    const end = dateRange.end
+      ? new Date(dateRange.end).getTime()
+      : Infinity;
+    const bookingTime = new Date(b.startDate).getTime();
+    return bookingTime >= start && bookingTime <= end;
+  });
 
-  // Total Revenue calculation (Sum of prices of all bookings)
-  const totalRevenue = bookings.reduce(
+  // Total reservations
+  const totalReservations = filteredBookings.length;
+
+  // Total Revenue calculation
+  const totalRevenue = filteredBookings.reduce(
     (sum, b) => sum + (b.totalPrice || 0),
     0,
   );
@@ -189,7 +206,7 @@ export default function Administration({
   // Total registered Owners
   const ownersCount = users.filter((u) => u.role === "owner").length;
 
-  // Total registered Sitters (Both in Firestore and default)
+  // Total registered Sitters
   const sittersCount = users.filter((u) => u.role === "sitter").length;
 
   // Monthly breakdown of bookings for trend chart
@@ -210,7 +227,7 @@ export default function Administration({
     ];
     const monthlyData = Array(12).fill(0);
 
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       if (b.startDate) {
         const monthIndex = new Date(b.startDate).getMonth();
         if (monthIndex >= 0 && monthIndex < 12) {
@@ -224,7 +241,11 @@ export default function Administration({
         month,
         count: monthlyData[idx],
       }))
-      .filter((_, idx) => idx <= new Date().getMonth()); // show up to current month
+      .filter((_, idx) => {
+        const currentMonth = new Date().getMonth();
+        // If we are filtering by range, maybe show all months that have data
+        return true; 
+      });
   };
 
   const monthlyTrend = getMonthlyStats();
@@ -235,7 +256,7 @@ export default function Administration({
     const cityMap: Record<string, { bookingsCount: number; revenue: number }> =
       {};
 
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       const city = b.city || "Casablanca";
       if (!cityMap[city]) {
         cityMap[city] = { bookingsCount: 0, revenue: 0 };
@@ -264,7 +285,7 @@ export default function Administration({
     let dogs = 0;
     let others = 0;
 
-    bookings.forEach((b) => {
+    filteredBookings.forEach((b) => {
       const type = (b.petType || "").toLowerCase();
       if (type.includes("chat") || type.includes("cat")) {
         cats++;
@@ -563,6 +584,38 @@ export default function Administration({
           {/* TAB 1: DASHBOARD STATS */}
           {activeTab === "dashboard" && (
             <div className="space-y-8 animate-fade-in">
+              {/* Date Filter Section */}
+              <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                  <h3 className="text-lg font-black text-gray-900 leading-tight">
+                    Filtre par période
+                  </h3>
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                    Ajuster les statistiques affichées
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Début</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.start}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Fin</label>
+                    <input 
+                      type="date" 
+                      value={dateRange.end}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Bento Grid KPI Widgets */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                 {/* Metric 1: Total Users */}
