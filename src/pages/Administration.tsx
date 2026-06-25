@@ -204,6 +204,19 @@ export default function Administration({
 
   // Total reservations
   const totalReservations = filteredBookings.length;
+  
+  // Total Cancelled reservations
+  const cancelledBookings = bookings.filter((b) => {
+    if (b.status.toLowerCase() !== 'cancelled') return false;
+    if (!b.startDate) return true;
+    const start = dateRange.start ? new Date(dateRange.start).getTime() : 0;
+    const end = dateRange.end
+      ? new Date(dateRange.end).getTime()
+      : Infinity;
+    const bookingTime = new Date(b.startDate).getTime();
+    return bookingTime >= start && bookingTime <= end;
+  });
+  const totalCancelled = cancelledBookings.length;
 
   // Total Revenue calculation (Confirmed and Completed bookings)
   const revenueBookings = filteredBookings.filter(b => b.status.toLowerCase() === 'completed' || b.status.toLowerCase() === 'confirmed');
@@ -636,7 +649,7 @@ export default function Administration({
               </div>
 
               {/* Bento Grid KPI Widgets */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-6">
                 {/* Metric 1: Total Users */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
@@ -717,7 +730,27 @@ export default function Administration({
                   </div>
                 </div>
 
-                {/* Metric 5: Gross Revenue */}
+                {/* Metric 5: Cancelled */}
+                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Cancelled
+                    </span>
+                    <span className="p-2 rounded-xl bg-red-50 text-red-500 group-hover:scale-110 transition-transform">
+                      <AlertTriangle className="w-5 h-5" />
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-3xl font-black text-gray-900">
+                      {totalCancelled}
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-semibold mt-1">
+                      Réservations annulées
+                    </p>
+                  </div>
+                </div>
+
+                {/* Metric 6: Gross Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
@@ -734,7 +767,7 @@ export default function Administration({
                   </div>
                 </div>
 
-                {/* Metric 6: Admin Revenue */}
+                {/* Metric 7: Admin Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">

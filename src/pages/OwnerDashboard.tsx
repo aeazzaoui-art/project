@@ -17,7 +17,7 @@ interface OwnerDashboardProps {
   onAddPet: (pet: Pet) => void;
   onNavigateToChat: () => void;
   onUpdateBookingStatus: (bookingId: string, newStatus: 'confirmed' | 'cancelled' | 'completed', cancelReason?: string, cancelledBy?: 'sitter' | 'owner' | 'admin') => void;
-  onAddReview: (sitterId: string, authorName: string, authorCity: string, rating: number, text: string) => void;
+  onAddReview: (bookingId: string, sitterId: string, authorName: string, authorCity: string, rating: number, text: string) => void;
 }
 
 export default function OwnerDashboard({
@@ -639,7 +639,8 @@ export default function OwnerDashboard({
                 disabled={!reviewText.trim()}
                 onClick={() => {
                   if (reviewBooking) {
-                    onAddReview(
+                  onAddReview(
+                      reviewBooking.id,
                       reviewBooking.sitterId,
                       `${currentUser.firstName} ${currentUser.lastName || ""}`.trim() || "Propriétaire",
                       currentUser.city || "Casablanca",

@@ -546,6 +546,7 @@ export default function App() {
 
   // Add a dynamic review for a sitter
   const handleAddReview = async (
+    bookingId: string,
     sitterId: string,
     authorName: string,
     authorCity: string,
@@ -554,6 +555,7 @@ export default function App() {
   ) => {
     const newReview: Review = {
       id: `rev-${Date.now()}`,
+      bookingId,
       sitterId,
       authorName,
       authorCity,
