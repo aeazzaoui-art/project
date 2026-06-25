@@ -5,18 +5,20 @@
 
 import React, { useState, useMemo } from 'react';
 import { Star, ShieldCheck, MapPin, Search as SearchIcon, Filter, Sliders, CalendarDays, Check, PawPrint } from 'lucide-react';
-import { Language, Sitter, AnimalType } from '../types';
+import { Language, Sitter, AnimalType, Review } from '../types';
 import { translations } from '../translations';
 import { CITIES } from '../data';
+import { getSitterRatingAndCount } from '../lib/ratingUtils';
 
 interface SearchProps {
   language: Language;
   sitters: Sitter[];
+  reviews: Review[];
   onSelectSitter: (sitter: Sitter) => void;
   onBookSitter: (sitter: Sitter, dates: { start: string; end: string }) => void;
 }
 
-export default function Search({ language, sitters, onSelectSitter, onBookSitter }: SearchProps) {
+export default function Search({ language, sitters, reviews, onSelectSitter, onBookSitter }: SearchProps) {
   const t = translations[language];
   const isRtl = language === 'AR';
 
@@ -54,7 +56,8 @@ export default function Search({ language, sitters, onSelectSitter, onBookSitter
       }
 
       // 2. Rating check
-      if (sitter.rating < minRating) {
+      const { rating } = getSitterRatingAndCount(sitter, reviews);
+      if (rating > 0 && rating < minRating) {
         return false;
       }
 
@@ -296,45 +299,51 @@ export default function Search({ language, sitters, onSelectSitter, onBookSitter
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredSitters.map((sitter) => (
-                  <div
-                    key={sitter.id}
-                    id={`sitter-card-${sitter.id}`}
-                    className="bg-white border border-[#E0E0E0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
-                  >
-                    {/* Top Content */}
-                    <div className="p-5 space-y-4">
-                      {/* Avatar and Name row */}
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-[#FF6B00]/10 border-2 border-[#FF6B00] flex items-center justify-center font-extrabold text-lg text-[#FF6B00] shrink-0">
-                          {sitter.photoUrl}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-extrabold text-base text-[#111111] truncate">
-                            {sitter.firstName} {sitter.lastName[0]}.
-                          </h4>
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-xs font-semibold text-gray-500 flex items-center gap-0.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#FF6B00]" />
-                              {sitter.city}
-                            </span>
-                            {sitter.verified && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                                {t.search_verified_badge}
-                              </span>
+                {filteredSitters.map((sitter) => {
+                  const { rating, reviewCount } = getSitterRatingAndCount(sitter, reviews);
+                  return (
+                    <div
+                      key={sitter.id}
+                      id={`sitter-card-${sitter.id}`}
+                      className="bg-white border border-[#E0E0E0] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+                    >
+                      {/* Top Content */}
+                      <div className="p-5 space-y-4">
+                        {/* Avatar and Name row */}
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-full bg-[#FF6B00]/10 border-2 border-[#FF6B00] overflow-hidden flex items-center justify-center font-extrabold text-lg text-[#FF6B00] shrink-0">
+                            {sitter.photoUrl && (sitter.photoUrl.startsWith('data:image') || sitter.photoUrl.startsWith('http')) ? (
+                              <img src={sitter.photoUrl} alt="Sitter" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              sitter.photoUrl || `${sitter.firstName[0]}${sitter.lastName[0]}`
                             )}
                           </div>
+                          <div className="min-w-0">
+                            <h4 className="font-extrabold text-base text-[#111111] truncate">
+                              {sitter.firstName} {sitter.lastName[0]}.
+                            </h4>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-xs font-semibold text-gray-500 flex items-center gap-0.5">
+                                <MapPin className="w-3.5 h-3.5 text-[#FF6B00]" />
+                                {sitter.city}
+                              </span>
+                              {sitter.verified && (
+                                <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
+                                  {t.search_verified_badge}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Rating row */}
-                      <div className="flex items-center justify-between text-xs font-bold bg-gray-50 rounded-lg p-2.5">
-                        <span className="text-[#FF6B00] flex items-center gap-0.5">
-                          <Star className="w-4 h-4 fill-[#FF6B00] stroke-none" />
-                          {sitter.rating}
-                        </span>
-                        <span className="text-gray-500">({sitter.reviewCount} {language === 'FR' ? "avis" : language === 'AR' ? "تقييم" : "reviews"})</span>
-                      </div>
+                        {/* Rating row */}
+                        <div className="flex items-center justify-between text-xs font-bold bg-gray-50 rounded-lg p-2.5">
+                          <span className="text-[#FF6B00] flex items-center gap-0.5">
+                            <Star className="w-4 h-4 fill-[#FF6B00] stroke-none" />
+                            {rating > 0 ? rating : "0.0"}
+                          </span>
+                          <span className="text-gray-500">({reviewCount} {language === 'FR' ? "avis" : language === 'AR' ? "تقييم" : "reviews"})</span>
+                        </div>
 
                       {/* Bio excerpt */}
                       <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
@@ -384,8 +393,9 @@ export default function Search({ language, sitters, onSelectSitter, onBookSitter
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
             )}
           </div>
         </div>

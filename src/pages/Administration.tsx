@@ -66,10 +66,20 @@ export default function Administration({
   );
 
   // Date Range for Statistics
+  const [startDateInput, setStartDateInput] = useState("2026-01-01");
+  const [endDateInput, setEndDateInput] = useState(() => new Date().toISOString().split("T")[0]);
+
   const [dateRange, setDateRange] = useState({
     start: "2026-01-01",
     end: new Date().toISOString().split("T")[0]
   });
+
+  const handleApplyFilter = () => {
+    setDateRange({
+      start: startDateInput,
+      end: endDateInput
+    });
+  };
 
   const [isResetting, setIsResetting] = useState(false);
 
@@ -180,8 +190,9 @@ export default function Administration({
   };
 
   // --- STATS CALCULATIONS ---
-  // Filter bookings by date range
+  // Filter bookings by date range and exclude cancelled
   const filteredBookings = bookings.filter((b) => {
+    if (b.status === 'cancelled') return false;
     if (!b.startDate) return true;
     const start = dateRange.start ? new Date(dateRange.start).getTime() : 0;
     const end = dateRange.end
@@ -194,14 +205,16 @@ export default function Administration({
   // Total reservations
   const totalReservations = filteredBookings.length;
 
-  // Total Revenue calculation
-  const totalRevenue = filteredBookings.reduce(
+  // Total Revenue calculation (Completed bookings only)
+  const completedBookings = filteredBookings.filter(b => b.status === 'completed');
+  const totalRevenue = completedBookings.reduce(
     (sum, b) => sum + (b.totalPrice || 0),
     0,
   );
 
-  // AMUCH Platform commission (15% standard rate)
-  const platformCommission = Math.round(totalRevenue * 0.15);
+  // AMUCH Platform commission (20% standard rate)
+  const platformCommission = Math.round(totalRevenue * 0.2);
+  const adminRevenue = platformCommission;
 
   // Total registered Owners
   const ownersCount = users.filter((u) => u.role === "owner").length;
@@ -594,13 +607,13 @@ export default function Administration({
                     Ajuster les statistiques affichées
                   </p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Début</label>
                     <input 
                       type="date" 
-                      value={dateRange.start}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                      value={startDateInput}
+                      onChange={(e) => setStartDateInput(e.target.value)}
                       className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]"
                     />
                   </div>
@@ -608,11 +621,17 @@ export default function Administration({
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Fin</label>
                     <input 
                       type="date" 
-                      value={dateRange.end}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                      value={endDateInput}
+                      onChange={(e) => setEndDateInput(e.target.value)}
                       className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-xs font-bold text-gray-700 focus:outline-none focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]"
                     />
                   </div>
+                  <button
+                    onClick={handleApplyFilter}
+                    className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E55A00] text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 h-[38px]"
+                  >
+                    <span>Filtrer</span>
+                  </button>
                 </div>
               </div>
 
@@ -698,11 +717,11 @@ export default function Administration({
                   </div>
                 </div>
 
-                {/* Metric 5: Revenue */}
+                {/* Metric 5: Gross Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
                     <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
-                      Chiffre d'affaires
+                      Chiffre d'affaires (Brut)
                     </span>
                     <span className="p-2 rounded-xl bg-[#FF6B00]/10 text-[#FF6B00] group-hover:scale-110 transition-transform">
                       <DollarSign className="w-5 h-5" />
@@ -712,8 +731,25 @@ export default function Administration({
                     <span className="text-3xl font-black text-[#FF6B00]">
                       {totalRevenue} MAD
                     </span>
-                    <p className="text-[10px] text-emerald-600 font-bold mt-1">
-                      Com: {platformCommission} MAD (15%)
+                  </div>
+                </div>
+
+                {/* Metric 6: Admin Revenue */}
+                <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                      Total Revenue
+                    </span>
+                    <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
+                      <DollarSign className="w-5 h-5" />
+                    </span>
+                  </div>
+                  <div className="mt-4">
+                    <span className="text-3xl font-black text-emerald-600">
+                      {adminRevenue} MAD
+                    </span>
+                    <p className="text-[10px] text-gray-400 font-bold mt-1">
+                      (20% sur complétées)
                     </p>
                   </div>
                 </div>
@@ -995,6 +1031,11 @@ export default function Administration({
                               <span className="text-[10px] text-gray-400 block">
                                 Compagnon: {b.petName} ({b.petType})
                               </span>
+                              {b.status === "cancelled" && b.cancelReason && (
+                                <span className="text-[10px] text-red-500 font-bold block mt-1 bg-red-50 px-2 py-0.5 rounded border border-red-100 max-w-xs leading-tight">
+                                  ⚠️ Motif: {b.cancelReason} ({b.cancelledBy === 'owner' ? 'Propriétaire' : b.cancelledBy === 'sitter' ? 'Sitter' : 'Admin'})
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 text-gray-900 font-extrabold">
                               {b.sitterName}
@@ -1397,9 +1438,21 @@ export default function Administration({
             {/* Header */}
             <div className="p-6 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase">
-                  {selectedUserDetails.firstName.charAt(0)}
-                  {selectedUserDetails.lastName.charAt(0)}
+                <div className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase overflow-hidden">
+                  {(selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl) ? (
+                    <img 
+                      src={(selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl) || ""} 
+                      alt={selectedUserDetails.firstName} 
+                      className="w-full h-full object-cover" 
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <img 
+                      src={`https://ui-avatars.com/api/?name=${selectedUserDetails.firstName}+${selectedUserDetails.lastName}&background=random`} 
+                      alt={selectedUserDetails.firstName} 
+                      className="w-full h-full object-cover" 
+                    />
+                  )}
                 </div>
                 <div>
                   <h3 className="text-base font-black tracking-tight">

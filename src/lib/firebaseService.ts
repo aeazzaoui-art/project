@@ -22,7 +22,7 @@ import {
   signOut 
 } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { User, Sitter, Booking, Message, Review } from '../types';
+import { User, Sitter, Booking, Message, Review, AppNotification } from '../types';
 import { SITTERS, REVIEWS } from '../data';
 
 export enum OperationType {
@@ -381,11 +381,19 @@ export async function saveBooking(booking: Booking): Promise<void> {
 /**
  * Update Booking status
  */
-export async function updateBookingInFirestore(bookingId: string, status: 'confirmed' | 'cancelled' | 'completed'): Promise<void> {
+export async function updateBookingInFirestore(
+  bookingId: string, 
+  status: 'confirmed' | 'cancelled' | 'completed',
+  cancelReason?: string,
+  cancelledBy?: 'sitter' | 'owner' | 'admin'
+): Promise<void> {
   const path = `bookings/${bookingId}`;
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
-    await updateDoc(bookingRef, { status });
+    const updateData: any = { status };
+    if (cancelReason !== undefined) updateData.cancelReason = cancelReason;
+    if (cancelledBy !== undefined) updateData.cancelledBy = cancelledBy;
+    await updateDoc(bookingRef, updateData);
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -485,6 +493,48 @@ export async function resetPlatformData(): Promise<void> {
     } catch (err) {
       console.error(`Error clearing ${colName}:`, err);
     }
+  }
+}
+
+/**
+ * Fetch Notifications
+ */
+export async function getNotificationsFromFirestore(): Promise<AppNotification[]> {
+  try {
+    const colRef = collection(db, 'notifications');
+    const snapshot = await getDocs(colRef);
+    const list: AppNotification[] = [];
+    snapshot.forEach((doc) => {
+      list.push(doc.data() as AppNotification);
+    });
+    // Sort by date descending
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    return [];
+  }
+}
+
+/**
+ * Add Notification
+ */
+export async function addNotificationToFirestore(notification: AppNotification): Promise<void> {
+  try {
+    await setDoc(doc(db, 'notifications', notification.id), notification);
+  } catch (error) {
+    console.error('Error adding notification:', error);
+  }
+}
+
+/**
+ * Mark Notification as read
+ */
+export async function markNotificationAsReadInFirestore(notificationId: string): Promise<void> {
+  try {
+    const docRef = doc(db, 'notifications', notificationId);
+    await updateDoc(docRef, { read: true });
+  } catch (error) {
+    console.error('Error updating notification read status:', error);
   }
 }
 

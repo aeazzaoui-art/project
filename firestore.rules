@@ -60,5 +60,26 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update, delete: if false; // Reviews are immutable
     }
+
+    // Rules for Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.userId == "all" ||
+        (resource.data.userId == "admin" && request.auth.token.email == "aeazzaoui@gmail.com")
+      );
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(notificationId);
+      allow update: if isSignedIn() && isValidId(notificationId) && (
+        // Allow marking notification as read (only changing the 'read' field)
+        (
+          (resource.data.userId == request.auth.uid || (resource.data.userId == "admin" && request.auth.token.email == "aeazzaoui@gmail.com")) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
+        ) ||
+        // Admin override
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
   }
 }

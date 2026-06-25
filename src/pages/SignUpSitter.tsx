@@ -57,6 +57,7 @@ export default function SignUpSitter({
   const [isSmsSent, setIsSmsSent] = useState(false);
   const [isSmsVerified, setIsSmsVerified] = useState(false);
   const [terms, setTerms] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState('');
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -128,7 +129,7 @@ export default function SignUpSitter({
         pricePerNight,
         priceWeekend,
         bio,
-        photoUrl: (firstName[0] + lastName[0]).toUpperCase(),
+        photoUrl: photoUrl || (firstName[0] + lastName[0]).toUpperCase(),
         capacityMax: capacity,
         phone,
         availabilities: ['2026-06-23', '2026-06-24', '2026-06-25', '2026-06-26', '2026-06-27', '2026-06-28']
@@ -312,16 +313,37 @@ export default function SignUpSitter({
               {/* STEP 2: PROFILE CREATION */}
               {step === 2 && (
                 <div className="space-y-6">
-                  {/* Photo Profile Simulation */}
+                  {/* Real Photo Profile Upload */}
                   <div className="flex flex-col sm:flex-row items-center gap-5 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                    <div className="w-16 h-16 rounded-full bg-orange-100 flex items-center justify-center font-bold text-[#FF6B00] text-xl shrink-0">
-                      YN
+                    <div className="w-16 h-16 rounded-full bg-orange-100 overflow-hidden flex items-center justify-center font-bold text-[#FF6B00] text-xl shrink-0">
+                      {photoUrl ? (
+                        <img src={photoUrl} alt="Sitter Preview" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      ) : (
+                        (firstName && lastName) ? `${firstName[0]}${lastName[0]}`.toUpperCase() : "YN"
+                      )}
                     </div>
                     <div className="text-center sm:text-left space-y-1.5">
                       <span className="text-xs font-bold text-gray-500 block uppercase">{language === 'FR' ? "Photo de profil Sitter" : "Sitter Profile Photo"}</span>
-                      <button type="button" className="text-xs font-extrabold text-[#FF6B00] hover:underline cursor-pointer">
-                        {language === 'FR' ? "Modifier / Téléverser une photo" : "Upload picture"}
-                      </button>
+                      <label className="text-xs font-extrabold text-[#FF6B00] hover:underline cursor-pointer flex items-center gap-1.5 justify-center sm:justify-start">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === 'string') {
+                                  setPhotoUrl(reader.result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        <span>{language === 'FR' ? "Modifier / Téléverser une photo" : "Upload picture"}</span>
+                      </label>
                     </div>
                   </div>
 
@@ -474,18 +496,6 @@ export default function SignUpSitter({
               {/* STEP 4: TRUST VERIFICATION & SUBMIT */}
               {step === 4 && (
                 <div className="space-y-6">
-                  {/* ID Upload */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase">{t.signup_sitter_id_upload} <span className="text-red-500">*</span></label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer bg-gray-50 hover:bg-[#FF6B00]/5 hover:border-[#FF6B00] transition-all">
-                      <FileText className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
-                      <span className="text-xs font-extrabold text-[#111111] block">
-                        {language === 'FR' ? "Déposer votre CIN (Recto/Verso) ou Passeport" : "Upload Government ID card"}
-                      </span>
-                      <span className="text-[10px] text-gray-400 mt-1 block">Fichiers acceptés : PDF, JPG, PNG (Max. 10MB)</span>
-                    </div>
-                  </div>
-
                   {/* SMS verify simulator */}
                   <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-4">
                     <h4 className="text-sm font-bold text-[#111111] flex items-center gap-2">

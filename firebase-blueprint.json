@@ -11,7 +11,8 @@
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["owner", "sitter"] },
         "city": { "type": "string" },
-        "pets": { "type": "array" }
+        "pets": { "type": "array" },
+        "photoUrl": { "type": "string" }
       },
       "required": ["id", "firstName", "lastName", "email", "role", "city"]
     },
@@ -113,6 +114,20 @@
         "text": { "type": "string" }
       },
       "required": ["id", "sitterId", "authorName", "authorCity", "rating", "date", "text"]
+    },
+    "AppNotification": {
+      "title": "AppNotification",
+      "description": "In-app notifications for users, sitters, or admins",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "date": { "type": "string" },
+        "read": { "type": "boolean" }
+      },
+      "required": ["id", "userId", "title", "message", "date", "read"]
     }
   },
   "firestore": {
@@ -135,6 +150,10 @@
     "/reviews/{reviewId}": {
       "schema": "Review",
       "description": "Ratings and written feedback for sitters"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "AppNotification",
+      "description": "User in-app notifications"
     }
   }
 }

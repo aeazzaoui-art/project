@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { Star, ShieldCheck, MapPin, Calendar, Heart, MessageSquare, ChevronLeft, CalendarCheck } from 'lucide-react';
 import { Language, Sitter, Review } from '../types';
 import { translations } from '../translations';
+import { getSitterRatingAndCount } from '../lib/ratingUtils';
 
 interface SitterProfileProps {
   language: Language;
@@ -25,6 +26,10 @@ export default function SitterProfile({ language, sitter, reviews, onBack, onBoo
   const sitterReviews = useMemo(() => {
     return reviews.filter((r) => r.sitterId === sitter.id);
   }, [sitter.id, reviews]);
+
+  const { rating, reviewCount } = useMemo(() => {
+    return getSitterRatingAndCount(sitter, reviews);
+  }, [sitter, reviews]);
 
   // Generate mini calendar dates for next 14 days
   const nextDays = useMemo(() => {
@@ -71,8 +76,12 @@ export default function SitterProfile({ language, sitter, reviews, onBack, onBoo
               <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
                 {/* Large Profile Image */}
                 <div className="flex flex-col md:flex-row items-center gap-5 text-center md:text-left">
-                  <div className="w-28 h-28 rounded-full bg-white border-4 border-white shadow-xl flex items-center justify-center font-extrabold text-3xl text-[#FF6B00] relative shrink-0">
-                    {sitter.photoUrl}
+                  <div className="w-28 h-28 rounded-full bg-white border-4 border-white overflow-hidden shadow-xl flex items-center justify-center font-extrabold text-3xl text-[#FF6B00] relative shrink-0">
+                    {sitter.photoUrl && (sitter.photoUrl.startsWith('data:image') || sitter.photoUrl.startsWith('http')) ? (
+                      <img src={sitter.photoUrl} alt="Sitter" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    ) : (
+                      sitter.photoUrl || `${sitter.firstName[0]}${sitter.lastName[0]}`
+                    )}
                     {sitter.verified && (
                       <span className="absolute bottom-1.5 right-1.5 p-1 bg-green-500 rounded-full text-white border-2 border-white" title="Vérifié">
                         <ShieldCheck className="w-4 h-4" />
@@ -91,7 +100,7 @@ export default function SitterProfile({ language, sitter, reviews, onBack, onBoo
                       <span>&bull;</span>
                       <span className="flex items-center gap-1 text-[#FF6B00]">
                         <Star className="w-4 h-4 fill-[#FF6B00] stroke-none" />
-                        {sitter.rating} / 5 ({sitter.reviewCount} avis)
+                        {rating > 0 ? rating : "0.0"} / 5 ({reviewCount} {language === 'FR' ? "avis" : language === 'AR' ? "تقييم" : "reviews"})
                       </span>
                     </div>
                   </div>
@@ -199,55 +208,39 @@ export default function SitterProfile({ language, sitter, reviews, onBack, onBoo
             {/* Reviews list Section */}
             <div className="bg-white border border-[#E0E0E0] rounded-3xl p-6 md:p-8 shadow-sm space-y-6">
               <h3 className="font-extrabold text-[#111111] text-lg border-b border-gray-100 pb-4">
-                {t.profile_reviews_title} ({sitterReviews.length + 4})
+                {t.profile_reviews_title} ({reviewCount})
               </h3>
 
               <div className="space-y-6">
-                {/* Seed reviews */}
-                {sitterReviews.map((rev) => (
-                  <div key={rev.id} className="space-y-3 pb-6 border-b border-gray-100 last:border-b-0 last:pb-0">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#FF6B00]/10 font-bold text-sm text-[#FF6B00] flex items-center justify-center">
-                          {rev.authorName[0]}
-                        </div>
-                        <div>
-                          <h4 className="font-bold text-sm text-[#111111]">{rev.authorName}</h4>
-                          <p className="text-xs text-gray-500">{rev.authorCity} &bull; {rev.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">
-                        ★ {rev.rating}
-                      </div>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed italic">
-                      "{rev.text}"
-                    </p>
-                  </div>
-                ))}
-
-                {/* Additional simulated reviews if none correspond specifically */}
-                <div className="space-y-3 pb-6 border-b border-gray-100">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 text-[#FF6B00] font-bold text-sm flex items-center justify-center">
-                        M
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-[#111111]">Mehdi</h4>
-                        <p className="text-xs text-gray-500">Rabat &bull; 2026-06-02</p>
-                      </div>
-                    </div>
-                    <div className="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">
-                      ★ 5
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 leading-relaxed italic">
-                    {language === 'FR' && "Une garde en or ! Tout s'est idéalement déroulé. Très professionnel et passionné d'animaux."}
-                    {language === 'AR' && "رعاية ذهبية! كل شيء سار بشكل مثالي. محترف للغاية ومحب للحيوانات."}
-                    {language === 'EN' && "Outstanding pet sitting service! Everything went flawlessly. Highly professional and caring."}
+                {sitterReviews.length === 0 ? (
+                  <p className="text-xs text-gray-400 font-semibold italic text-center py-4">
+                    {language === 'FR' 
+                      ? "Aucun avis pour le moment. Ce pet-sitter n'a pas encore reçu d'avis." 
+                      : "No reviews yet. This pet sitter has not received any reviews yet."}
                   </p>
-                </div>
+                ) : (
+                  sitterReviews.map((rev) => (
+                    <div key={rev.id} className="space-y-3 pb-6 border-b border-gray-100 last:border-b-0 last:pb-0">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#FF6B00]/10 font-bold text-sm text-[#FF6B00] flex items-center justify-center">
+                            {rev.authorName[0]}
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-sm text-[#111111]">{rev.authorName}</h4>
+                            <p className="text-xs text-gray-500">{rev.authorCity} &bull; {rev.date}</p>
+                          </div>
+                        </div>
+                        <div className="text-orange-500 text-xs font-bold bg-orange-50 px-2 py-1 rounded">
+                          ★ {rev.rating}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 leading-relaxed italic">
+                        "{rev.text}"
+                      </p>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>

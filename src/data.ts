@@ -247,9 +247,22 @@ export const FAQS: FAQItem[] = [
       EN: "How much does it cost to register as a pet sitter?"
     },
     answer: {
-      FR: "L'inscription pour les pet sitters est 100% gratuite. Vous fixez vous-même vos propres tarifs par nuit ou par jour. AMUCH ne prélève aucun abonnement mensuel.",
-      AR: "التسجيل لحراس الحيوانات الأليفة مجاني بنسبة %100. أنت من يحدد أسعارك الخاصة لليلة أو اليوم. أموش لا تفرض أي اشتراكات شهرية.",
-      EN: "Registration for pet sitters is 100% free. You set your own rates per night or per day. AMUCH does not charge any monthly subscription."
+      FR: "L'inscription pour les pet sitters est 100% gratuite. Vous fixez vous-même vos propres tarifs par nuit ou par jour. AMUCH ne prélève aucun abonnement mensuel. Seule une commission d'intermédiation transparente de 20% est calculée sur vos réservations confirmées.",
+      AR: "التسجيل لحراس الحيوانات الأليفة مجاني بنسبة %100. أنت من يحدد أسعارك الخاصة لليلة أو اليوم. أموش لا تفرض أي اشتراكات شهرية، بينما يتم احتساب عمولة وساطة بنسبة 20% فقط على حجوزاتكم المؤكدة.",
+      EN: "Registration for pet sitters is 100% free. You set your own rates per night or per day. AMUCH does not charge any monthly subscription. Only a transparent 20% service commission is calculated on your confirmed bookings."
+    }
+  },
+  {
+    category: 'sitter',
+    question: {
+      FR: "Comment fonctionne la commission AMUCH de 20% ?",
+      AR: "كيف تعمل عمولة أموش بنسبة 20%؟",
+      EN: "How does the 20% AMUCH commission work?"
+    },
+    answer: {
+      FR: "AMUCH perçoit une commission d'intermédiation de 20% sur le montant brut des réservations complétées. Ces frais sont réinvestis pour assurer la maintenance technique du service, financer l'assistance client locale 24/7 au Maroc, et mener des campagnes marketing pour attirer continuellement de nouveaux propriétaires d'animaux de compagnie sur vos profils.",
+      AR: "تقتطع منصة أموش عمولة قدرها 20% من إجمالي مبالغ الحجوزات المكتملة. تساهم هذه العمولة في تمويل تشغيل وتطوير المنصة في المغرب، ودعم العملاء على مدار الساعة، وإطلاق حملات تسويقية لربطكم بالمزيد من مربي وملاك الحيوانات.",
+      EN: "AMUCH charges a 20% intermediation commission on the gross amount of completed bookings. These fees support technical maintenance, 24/7 local customer support in Morocco, and marketing campaigns to continually attract new pet owners to your profiles."
     }
   },
   {

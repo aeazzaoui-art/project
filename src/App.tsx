@@ -13,6 +13,7 @@ import {
   Message,
   Pet,
   Review,
+  AppNotification,
 } from "./types";
 import { translations } from "./translations";
 import { SITTERS, REVIEWS } from "./data";
@@ -24,6 +25,9 @@ import {
   saveBooking,
   updateBookingInFirestore,
   getReviewsFromFirestore,
+  addReviewToFirestore,
+  addNotificationToFirestore,
+  markNotificationAsReadInFirestore,
   saveSitter,
   logoutWithAuth,
 } from "./lib/firebaseService";
@@ -57,6 +61,7 @@ export default function App() {
     sitters: realtimeSitters,
     bookings: realtimeBookings,
     reviews: realtimeReviews,
+    notifications: realtimeNotifications,
     currentUser: realtimeCurrentUser,
     currentSitterUser: realtimeCurrentSitterUser,
     loading: realtimeLoading,
@@ -107,6 +112,7 @@ export default function App() {
   // Active selected sitter for detail profile view
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   const [selectedSitter, setSelectedSitter] = useState<Sitter | null>(() => {
     const saved = localStorage.getItem("amuch_selected_sitter");
@@ -123,8 +129,9 @@ export default function App() {
       setSitters(realtimeSitters);
       setBookings(realtimeBookings);
       setReviews(realtimeReviews);
+      setNotifications(realtimeNotifications || []);
     }
-  }, [realtimeSitters, realtimeBookings, realtimeReviews, realtimeLoading]);
+  }, [realtimeSitters, realtimeBookings, realtimeReviews, realtimeNotifications, realtimeLoading]);
 
   // Sync auth data
   useEffect(() => {
@@ -395,6 +402,28 @@ export default function App() {
 
     setBookings((prev) => [newBooking, ...prev]);
     saveBooking(newBooking); // Save to Firestore API
+
+    // Trigger notifications for new booking
+    triggerNotification(
+      newBooking.ownerId,
+      language === "FR" ? "Demande envoyée" : "Request sent",
+      language === "FR"
+        ? `Votre demande de réservation pour ${newBooking.petName} avec ${newBooking.sitterName} est en attente.`
+        : `Your booking request for ${newBooking.petName} with ${newBooking.sitterName} is pending.`
+    );
+    triggerNotification(
+      newBooking.sitterId,
+      language === "FR" ? "Nouvelle demande" : "New request received",
+      language === "FR"
+        ? `Vous avez reçu une nouvelle demande de garde de ${newBooking.ownerName} pour ${newBooking.petName}.`
+        : `You received a new sitting request from ${newBooking.ownerName} for ${newBooking.petName}.`
+    );
+    triggerNotification(
+      "admin",
+      "Nouvelle réservation",
+      `Réservation #${newBooking.id.slice(-6)} créée par ${newBooking.ownerName} pour ${newBooking.sitterName} (Montant: ${newBooking.totalPrice} MAD).`
+    );
+
     setBookingModal({
       isOpen: false,
       sitter: null,
@@ -411,20 +440,162 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Helper to trigger and record notifications
+  const triggerNotification = async (userId: string, title: string, message: string) => {
+    const notif: AppNotification = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      userId,
+      title,
+      message,
+      date: new Date().toISOString(),
+      read: false
+    };
+    try {
+      await addNotificationToFirestore(notif);
+      setNotifications(prev => [notif, ...prev]);
+    } catch (e) {
+      console.error("Error creating notification:", e);
+    }
+  };
+
   // Sitter updates reservation status from dashboard
   const handleUpdateBookingStatus = (
     bookingId: string,
     newStatus: "confirmed" | "cancelled" | "completed",
+    cancelReason?: string,
+    cancelledBy?: 'sitter' | 'owner' | 'admin',
   ) => {
-    setBookings((prev) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus } : b)),
-    );
-    updateBookingInFirestore(bookingId, newStatus); // Save to Firestore API
+    setBookings((prev) => {
+      const updated = prev.map((b) => (b.id === bookingId ? { ...b, status: newStatus, cancelReason, cancelledBy } : b));
+      // Trigger notifications using the booking data
+      const b = prev.find((bk) => bk.id === bookingId);
+      if (b) {
+        if (newStatus === "confirmed") {
+          triggerNotification(
+            b.ownerId,
+            language === "FR" ? "Réservation confirmée !" : "Booking confirmed!",
+            language === "FR"
+              ? `Bonne nouvelle ! ${b.sitterName} a accepté votre demande de garde pour ${b.petName}.`
+              : `Great news! ${b.sitterName} accepted your sitting request for ${b.petName}.`
+          );
+          triggerNotification(
+            b.sitterId,
+            language === "FR" ? "Réservation acceptée" : "Booking accepted",
+            language === "FR"
+              ? `Vous avez accepté de garder ${b.petName} (Propriétaire : ${b.ownerName}).`
+              : `You agreed to sit ${b.petName} (Owner: ${b.ownerName}).`
+          );
+          triggerNotification(
+            "admin",
+            "Réservation confirmée",
+            `La réservation #${bookingId.slice(-6)} entre ${b.ownerName} et ${b.sitterName} a été confirmée.`
+          );
+        } else if (newStatus === "completed") {
+          triggerNotification(
+            b.ownerId,
+            language === "FR" ? "Garde terminée" : "Sitting completed",
+            language === "FR"
+              ? `La garde de ${b.petName} par ${b.sitterName} s'est terminée avec succès. N'oubliez pas de laisser un avis !`
+              : `The sitting of ${b.petName} by ${b.sitterName} was completed. Don't forget to leave a review!`
+          );
+          triggerNotification(
+            b.sitterId,
+            language === "FR" ? "Garde terminée" : "Sitting completed",
+            language === "FR"
+              ? `Félicitations ! Votre garde pour ${b.petName} est marquée comme terminée. Vos gains ont été crédités.`
+              : `Congratulations! Your sitting for ${b.petName} is marked completed. Your earnings have been credited.`
+          );
+          triggerNotification(
+            "admin",
+            "Réservation complétée",
+            `La réservation #${bookingId.slice(-6)} de ${b.ownerName} avec ${b.sitterName} est terminée (Revenue: ${(b.totalPrice * 0.2).toFixed(1)} MAD commission de 20%).`
+          );
+        } else if (newStatus === "cancelled") {
+          const byWhom = cancelledBy === 'owner' ? "le propriétaire" : cancelledBy === 'sitter' ? "le sitter" : "l'administration";
+          triggerNotification(
+            b.ownerId,
+            language === "FR" ? "Réservation annulée" : "Booking cancelled",
+            language === "FR"
+              ? `La réservation pour ${b.petName} a été annulée par ${byWhom}. Motif : ${cancelReason || "non spécifié"}.`
+              : `The booking for ${b.petName} was cancelled by ${byWhom}. Reason: ${cancelReason || "not specified"}.`
+          );
+          triggerNotification(
+            b.sitterId,
+            language === "FR" ? "Réservation annulée" : "Booking cancelled",
+            language === "FR"
+              ? `La réservation pour ${b.petName} a été annulée par ${byWhom}. Motif : ${cancelReason || "non spécifié"}.`
+              : `The booking for ${b.petName} was cancelled by ${byWhom}. Reason: ${cancelReason || "not specified"}.`
+          );
+          triggerNotification(
+            "admin",
+            "Réservation annulée",
+            `La réservation #${bookingId.slice(-6)} entre ${b.ownerName} et ${b.sitterName} a été annulée par ${byWhom}. Motif: ${cancelReason || "aucun"}.`
+          );
+        }
+      }
+      return updated;
+    });
+
+    updateBookingInFirestore(bookingId, newStatus, cancelReason, cancelledBy); // Save to Firestore API
     alert(
       language === "FR"
         ? `Réservation mise à jour avec succès : statut ${newStatus === "confirmed" ? "Confirmé" : newStatus === "cancelled" ? "Annulé" : "Terminé"}.`
         : `تم تحديث حالة الحجز بنجاح.`,
     );
+  };
+
+  // Add a dynamic review for a sitter
+  const handleAddReview = async (
+    sitterId: string,
+    authorName: string,
+    authorCity: string,
+    rating: number,
+    text: string,
+  ) => {
+    const newReview: Review = {
+      id: `rev-${Date.now()}`,
+      sitterId,
+      authorName,
+      authorCity,
+      rating,
+      date: new Date().toISOString().split("T")[0],
+      text,
+    };
+    try {
+      await addReviewToFirestore(newReview);
+      setReviews((prev) => [newReview, ...prev]);
+
+      // Trigger notifications for new review
+      triggerNotification(
+        sitterId,
+        language === "FR" ? "Nouveau commentaire certifié !" : "New certified review!",
+        language === "FR"
+          ? `${authorName} vous a attribué une note de ${rating}★ : "${text.slice(0, 40)}..."`
+          : `${authorName} rated you ${rating}★: "${text.slice(0, 40)}..."`
+      );
+      triggerNotification(
+        "admin",
+        "Nouveau commentaire certifié",
+        `L'utilisateur ${authorName} a publié un avis de ${rating}★ pour le sitter ${sitterId}.`
+      );
+
+      alert(
+        language === "FR"
+          ? "Votre avis a été publié avec succès !"
+          : "تم نشر تقييمك بنجاح !",
+      );
+    } catch (error) {
+      console.error("Error adding review:", error);
+      alert("Une erreur est survenue lors de la publication de l'avis.");
+    }
+  };
+
+  // Mark notification as read
+  const handleMarkNotificationRead = async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    await markNotificationAsReadInFirestore(id);
   };
 
   // Add pet to current logged-in owner user
@@ -526,6 +697,8 @@ export default function App() {
         setCurrentUser={setCurrentUser}
         authMode={authMode}
         setAuthMode={setAuthMode}
+        notifications={notifications}
+        onMarkNotificationRead={handleMarkNotificationRead}
       />
 
       {/* 2. MAIN ACTIVE VIEW ROUTER */}
@@ -538,6 +711,7 @@ export default function App() {
           <Search
             language={language}
             sitters={sitters}
+            reviews={reviews}
             onSelectSitter={handleSelectSitter}
             onBookSitter={(sitter, dates) =>
               handleBookSitterFlow(sitter, dates)
@@ -597,6 +771,8 @@ export default function App() {
               chats={[]}
               onAddPet={handleAddPetToUser}
               onNavigateToChat={() => setActivePage("chat")}
+              onUpdateBookingStatus={handleUpdateBookingStatus}
+              onAddReview={handleAddReview}
             />
           ) : (
             <div className="min-h-screen flex items-center justify-center bg-[#F7F7F7]">
@@ -617,7 +793,12 @@ export default function App() {
                   b.sitterId === "sitter-1",
               )}
               onUpdateBookingStatus={handleUpdateBookingStatus}
-              onNavigateToChat={() => setActivePage("chat")}
+              onNavigateToChat={(partnerId?: string) => {
+                if (partnerId) {
+                  setActiveChatPartnerId(partnerId);
+                }
+                setActivePage("chat");
+              }}
               reviews={reviews.filter(
                 (r) =>
                   r.sitterId === currentSitterUser.id ||

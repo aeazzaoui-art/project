@@ -38,6 +38,7 @@ export interface User {
   city: string;
   pets: Pet[];
   isBlocked?: boolean;
+  photoUrl?: string;
 }
 
 export interface Sitter {
@@ -71,6 +72,8 @@ export interface Booking {
   endDate: string;
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  cancelReason?: string;
+  cancelledBy?: 'sitter' | 'owner' | 'admin';
 }
 
 export interface Message {
@@ -100,3 +103,13 @@ export interface Review {
   date: string;
   text: string;
 }
+
+export interface AppNotification {
+  id: string;
+  userId: string; // 'all', 'admin', or specific userId/sitterId
+  title: string;
+  message: string;
+  date: string; // ISO or date string
+  read: boolean;
+}
+

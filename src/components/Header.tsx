@@ -4,8 +4,8 @@
  */
 
 import React, { useState } from 'react';
-import { Menu, X, PawPrint, User as UserIcon, Globe, LogOut } from 'lucide-react';
-import { Language, ActivePage, User } from '../types';
+import { Menu, X, PawPrint, User as UserIcon, Globe, LogOut, Bell } from 'lucide-react';
+import { Language, ActivePage, User, AppNotification } from '../types';
 import { translations } from '../translations';
 
 interface HeaderProps {
@@ -17,6 +17,8 @@ interface HeaderProps {
   setCurrentUser: (user: User | null) => void;
   authMode?: 'login' | 'signup';
   setAuthMode?: (mode: 'login' | 'signup') => void;
+  notifications?: AppNotification[];
+  onMarkNotificationRead?: (notificationId: string) => void;
 }
 
 export default function Header({
@@ -27,13 +29,27 @@ export default function Header({
   currentUser,
   setCurrentUser,
   authMode,
-  setAuthMode
+  setAuthMode,
+  notifications = [],
+  onMarkNotificationRead
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
 
   const t = translations[language];
   const isRtl = language === 'AR';
+
+  const userNotifications = notifications.filter((n) => {
+    if (!currentUser) return false;
+    const isAdmin = currentUser.email === 'aeazzaoui@gmail.com';
+    if (isAdmin) {
+      return n.userId === 'admin' || n.userId === 'all';
+    }
+    return n.userId === currentUser.id || n.userId === 'all';
+  });
+
+  const unreadCount = userNotifications.filter((n) => !n.read).length;
 
   const navLinks: Array<{ label: string; page: ActivePage }> = [
     { label: t.nav_home, page: 'home' },
@@ -128,6 +144,80 @@ export default function Header({
           {/* User Authentication Actions */}
           {currentUser ? (
             <div className="flex items-center gap-3">
+              {/* Notifications Bell Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setNotifDropdownOpen(!notifDropdownOpen)}
+                  className="relative p-2 rounded-xl border border-gray-200 text-[#111111] hover:border-[#FF6B00] hover:text-[#FF6B00] transition-all cursor-pointer flex items-center justify-center"
+                  title="Notifications"
+                  id="header-notification-bell-btn"
+                >
+                  <Bell className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white font-extrabold text-[10px] rounded-full flex items-center justify-center animate-pulse">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {notifDropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl border border-gray-100 shadow-2xl py-3 z-50 space-y-2 animate-fade-in">
+                    <div className="px-4 pb-2 border-b border-gray-100 flex items-center justify-between">
+                      <span className="font-extrabold text-sm text-gray-900">
+                        {language === 'FR' ? "Notifications" : "Notifications"}
+                      </span>
+                      {unreadCount > 0 && (
+                        <span className="text-[10px] bg-red-100 text-red-600 font-extrabold px-2 py-0.5 rounded-full">
+                          {unreadCount} {language === 'FR' ? "nouvelles" : "new"}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="max-h-64 overflow-y-auto divide-y divide-gray-50">
+                      {userNotifications.length === 0 ? (
+                        <div className="py-8 px-4 text-center">
+                          <p className="text-xs text-gray-400 font-bold">
+                            {language === 'FR' ? "Aucune notification pour le moment" : "No notifications yet"}
+                          </p>
+                        </div>
+                      ) : (
+                        userNotifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            onClick={() => {
+                              if (!notif.read && onMarkNotificationRead) {
+                                onMarkNotificationRead(notif.id);
+                              }
+                            }}
+                            className={`p-3 text-left transition-colors cursor-pointer hover:bg-gray-50 flex gap-2 items-start ${
+                              !notif.read ? 'bg-orange-50/50' : ''
+                            }`}
+                          >
+                            <div className={`w-2 h-2 mt-1.5 shrink-0 rounded-full ${!notif.read ? 'bg-[#FF6B00]' : 'bg-gray-300'}`} />
+                            <div className="space-y-0.5">
+                              <p className="text-xs font-extrabold text-gray-900 leading-tight">
+                                {notif.title}
+                              </p>
+                              <p className="text-[11px] text-gray-500 font-semibold leading-normal">
+                                {notif.message}
+                              </p>
+                              <p className="text-[9px] text-gray-400 font-medium">
+                                {new Date(notif.date).toLocaleDateString(language === 'FR' ? 'fr-FR' : 'en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  day: 'numeric',
+                                  month: 'short'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => {
                   setActivePage(currentUser.role === 'owner' ? 'owner-dashboard' : 'sitter-dashboard');

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { User, Sitter, Booking, Review } from "../types";
+import { User, Sitter, Booking, Review, AppNotification } from "../types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function useFirestoreRealtime() {
@@ -9,6 +9,7 @@ export function useFirestoreRealtime() {
   const [sitters, setSitters] = useState<Sitter[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState(true);
 
   // For current auth state sync
@@ -23,6 +24,7 @@ export function useFirestoreRealtime() {
     let unsubscribeSitters: () => void;
     let unsubscribeBookings: () => void;
     let unsubscribeReviews: () => void;
+    let unsubscribeNotifications: () => void;
     let unsubscribeUserDoc: (() => void) | null = null;
     let unsubscribeSitterDoc: (() => void) | null = null;
 
@@ -34,6 +36,7 @@ export function useFirestoreRealtime() {
       if (unsubscribeSitters) unsubscribeSitters();
       if (unsubscribeBookings) unsubscribeBookings();
       if (unsubscribeReviews) unsubscribeReviews();
+      if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
 
@@ -102,12 +105,34 @@ export function useFirestoreRealtime() {
             if (docSnap.exists()) setUsers([docSnap.data() as User]);
           });
         }
+
+        // 3. User-specific notifications listener (securely filtered)
+        const notifTargets = [authUser.uid, "all"];
+        if (isAdmin) {
+          notifTargets.push("admin");
+        }
+        const qNotif = query(
+          collection(db, "notifications"),
+          where("userId", "in", notifTargets)
+        );
+        unsubscribeNotifications = onSnapshot(qNotif, (snapshot) => {
+          const notificationsList: AppNotification[] = [];
+          snapshot.forEach((doc) => {
+            notificationsList.push(doc.data() as AppNotification);
+          });
+          // Sort descending by date
+          notificationsList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          setNotifications(notificationsList);
+        }, (error) => {
+          console.error("Notifications listener error:", error);
+        });
       } else {
         // Not logged in
         setCurrentUser(null);
         setCurrentSitterUser(null);
         setUsers([]);
         setBookings([]);
+        setNotifications([]);
         setAuthLoading(false);
       }
 
@@ -134,6 +159,7 @@ export function useFirestoreRealtime() {
       if (unsubscribeSitters) unsubscribeSitters();
       if (unsubscribeBookings) unsubscribeBookings();
       if (unsubscribeReviews) unsubscribeReviews();
+      if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubscribeAuth) unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
@@ -145,6 +171,7 @@ export function useFirestoreRealtime() {
     sitters,
     bookings,
     reviews,
+    notifications,
     currentUser,
     currentSitterUser,
     loading,

@@ -661,16 +661,42 @@ export default function SignUpOwner({
                       </div>
                     </div>
 
-                    {/* Simulated file upload area */}
+                    {/* Real file upload area */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-500 uppercase">{t.signup_pet_photo}</label>
-                      <div className="border-2 border-dashed border-gray-300 hover:border-[#FF6B00] rounded-2xl p-6 text-center cursor-pointer bg-gray-50 hover:bg-[#FF6B00]/5 transition-all">
-                        <Upload className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
-                        <span className="text-xs font-bold text-gray-600 block">
-                          {language === 'FR' ? "Déposer l'image ou cliquer pour téléverser" : "Upload animal photo here"}
-                        </span>
-                        <span className="text-[10px] text-gray-400 mt-1 block">PNG, JPG ou JPEG (Max. 5MB)</span>
-                      </div>
+                      <label className="border-2 border-dashed border-gray-300 hover:border-[#FF6B00] rounded-2xl p-6 text-center cursor-pointer bg-gray-50 hover:bg-[#FF6B00]/5 transition-all block relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                if (typeof reader.result === 'string') {
+                                  updatePetField('photoUrl', reader.result);
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                        />
+                        {pets[currentPetIdx]?.photoUrl && (pets[currentPetIdx].photoUrl.startsWith('data:image') || pets[currentPetIdx].photoUrl.startsWith('http')) ? (
+                          <div className="space-y-2">
+                            <img src={pets[currentPetIdx].photoUrl} alt="Pet Preview" className="w-20 h-20 rounded-xl object-cover mx-auto border" referrerPolicy="no-referrer" />
+                            <span className="text-xs font-extrabold text-[#FF6B00] block">{language === 'FR' ? "Changer d'image" : "Change image"}</span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-8 h-8 text-[#FF6B00] mx-auto mb-2" />
+                            <span className="text-xs font-bold text-gray-600 block">
+                              {language === 'FR' ? "Déposer l'image ou cliquer pour téléverser" : "Upload animal photo here"}
+                            </span>
+                            <span className="text-[10px] text-gray-400 mt-1 block">PNG, JPG ou JPEG (Max. 5MB)</span>
+                          </>
+                        )}
+                      </label>
                     </div>
                   </div>
 
