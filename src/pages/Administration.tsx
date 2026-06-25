@@ -205,9 +205,9 @@ export default function Administration({
   // Total reservations
   const totalReservations = filteredBookings.length;
 
-  // Total Revenue calculation (Completed bookings only)
-  const completedBookings = filteredBookings.filter(b => b.status === 'completed');
-  const totalRevenue = completedBookings.reduce(
+  // Total Revenue calculation (Confirmed and Completed bookings)
+  const revenueBookings = filteredBookings.filter(b => b.status.toLowerCase() === 'completed' || b.status.toLowerCase() === 'confirmed');
+  const totalRevenue = revenueBookings.reduce(
     (sum, b) => sum + (b.totalPrice || 0),
     0,
   );
@@ -749,7 +749,7 @@ export default function Administration({
                       {adminRevenue} MAD
                     </span>
                     <p className="text-[10px] text-gray-400 font-bold mt-1">
-                      (20% sur complétées)
+                      (20% sur réservations)
                     </p>
                   </div>
                 </div>

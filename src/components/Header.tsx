@@ -40,7 +40,8 @@ export default function Header({
   const t = translations[language];
   const isRtl = language === 'AR';
 
-  const userNotifications = notifications.filter((n) => {
+  const uniqueNotifications = Array.from(new Map(notifications.map(n => [n.id, n])).values());
+  const userNotifications = uniqueNotifications.filter((n) => {
     if (!currentUser) return false;
     const isAdmin = currentUser.email === 'aeazzaoui@gmail.com';
     if (isAdmin) {
