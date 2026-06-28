@@ -12,7 +12,8 @@
         "role": { "type": "string", "enum": ["owner", "sitter"] },
         "city": { "type": "string" },
         "pets": { "type": "array" },
-        "photoUrl": { "type": "string" }
+        "photoUrl": { "type": "string" },
+        "isActive": { "type": "boolean" }
       },
       "required": ["id", "firstName", "lastName", "email", "role", "city"]
     },
@@ -129,6 +130,20 @@
         "read": { "type": "boolean" }
       },
       "required": ["id", "userId", "title", "message", "date", "read"]
+    },
+    "BlogPost": {
+      "title": "BlogPost",
+      "description": "Blog posts managed by admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "author": { "type": "string" },
+        "date": { "type": "string" },
+        "imageUrl": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "author", "date"]
     }
   },
   "firestore": {
@@ -155,6 +170,10 @@
     "/notifications/{notificationId}": {
       "schema": "AppNotification",
       "description": "User in-app notifications"
+    },
+    "/blogPosts/{blogPostId}": {
+      "schema": "BlogPost",
+      "description": "Platform blog posts"
     }
   }
 }

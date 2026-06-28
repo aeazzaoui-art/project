@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { PawPrint, Mail, Phone, Flame, ShieldAlert } from 'lucide-react';
+import { PawPrint, Mail, Phone, Flame, ShieldAlert, Facebook, Instagram, Smartphone } from 'lucide-react';
 import { Language, ActivePage } from '../types';
 import { translations } from '../translations';
 
@@ -45,9 +45,15 @@ export default function Footer({ language, setLanguage, setActivePage }: FooterP
               {t.footer_desc}
             </p>
             <div className="flex gap-4">
-              <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors text-sm">f</a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors text-sm">📸</a>
-              <a href="#" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors text-sm">💬</a>
+              <a href="https://facebook.com" target="_blank" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors">
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a href="https://instagram.com" target="_blank" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors">
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a href="https://tiktok.com" target="_blank" className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-[#FF6B00] transition-colors">
+                <Smartphone className="w-4 h-4" />
+              </a>
             </div>
           </div>
 

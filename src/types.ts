@@ -38,6 +38,7 @@ export interface User {
   city: string;
   pets: Pet[];
   isBlocked?: boolean;
+  isActive?: boolean; // New field for sitter activation
   photoUrl?: string;
 }
 
@@ -112,5 +113,14 @@ export interface AppNotification {
   message: string;
   date: string; // ISO or date string
   read: boolean;
+}
+
+export interface BlogPost {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  date: string;
+  imageUrl?: string;
 }
 

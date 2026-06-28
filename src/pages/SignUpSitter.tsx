@@ -332,6 +332,10 @@ export default function SignUpSitter({
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
+                              if (file.size > 800 * 1024) {
+                                alert(language === 'FR' ? "L'image est trop grande (max 800 Ko). Veuillez choisir une image plus petite." : "Image is too large (max 800KB). Please choose a smaller image.");
+                                return;
+                              }
                               const reader = new FileReader();
                               reader.onload = () => {
                                 if (typeof reader.result === 'string') {

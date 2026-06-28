@@ -62,6 +62,7 @@ export default function App() {
     bookings: realtimeBookings,
     reviews: realtimeReviews,
     notifications: realtimeNotifications,
+    blogPosts: realtimeBlogPosts,
     currentUser: realtimeCurrentUser,
     currentSitterUser: realtimeCurrentSitterUser,
     loading: realtimeLoading,
@@ -682,6 +683,7 @@ export default function App() {
         users={users}
         sitters={sitters}
         bookings={bookings}
+        blogPosts={realtimeBlogPosts}
         onBackToHome={() => setActivePage("home")}
       />
     );
@@ -785,28 +787,46 @@ export default function App() {
 
         {activePage === "sitter-dashboard" && (
           currentSitterUser ? (
-            <SitterDashboard
-              language={language}
-              currentSitter={currentSitterUser}
-              onLogout={handleLogout}
-              bookings={bookings.filter(
-                (b) =>
-                  b.sitterId === currentSitterUser.id ||
-                  b.sitterId === "sitter-1",
-              )}
-              onUpdateBookingStatus={handleUpdateBookingStatus}
-              onNavigateToChat={(partnerId?: string) => {
-                if (partnerId) {
-                  setActiveChatPartnerId(partnerId);
-                }
-                setActivePage("chat");
-              }}
-              reviews={reviews.filter(
-                (r) =>
-                  r.sitterId === currentSitterUser.id ||
-                  r.sitterId === "sitter-1",
-              )}
-            />
+            currentSitterUser.isActive ? (
+              <SitterDashboard
+                language={language}
+                currentSitter={currentSitterUser}
+                onLogout={handleLogout}
+                bookings={bookings.filter(
+                  (b) =>
+                    b.sitterId === currentSitterUser.id ||
+                    b.sitterId === "sitter-1",
+                )}
+                onUpdateBookingStatus={handleUpdateBookingStatus}
+                onNavigateToChat={(partnerId?: string) => {
+                  if (partnerId) {
+                    setActiveChatPartnerId(partnerId);
+                  }
+                  setActivePage("chat");
+                }}
+                reviews={reviews.filter(
+                  (r) =>
+                    r.sitterId === currentSitterUser.id ||
+                    r.sitterId === "sitter-1",
+                )}
+              />
+            ) : (
+              <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F7F7] p-8 text-center">
+                <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md border border-gray-100">
+                  <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">
+                    ⏳
+                  </div>
+                  <h3 className="text-2xl font-black text-gray-900 mb-4 tracking-tight">
+                    {language === "FR" ? "Compte en cours de vérification" : "Account Under Review"}
+                  </h3>
+                  <p className="text-sm text-gray-500 font-medium mb-8 leading-relaxed">
+                    {language === "FR" 
+                      ? "Votre compte est en cours d'examen par notre équipe. Vous recevrez une notification dès qu'il sera activé."
+                      : "Your account is being reviewed by our team. You will be notified once it is activated."}
+                  </p>
+                </div>
+              </div>
+            )
           ) : !realtimeLoading ? (
             <div className="min-h-screen flex flex-col items-center justify-center bg-[#F7F7F7] p-8 text-center">
               <div className="bg-white p-10 rounded-3xl shadow-xl max-w-md border border-gray-100">

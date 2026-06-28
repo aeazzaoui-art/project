@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { User, Sitter, Booking, Review, AppNotification } from "../types";
+import { User, Sitter, Booking, Review, AppNotification, BlogPost } from "../types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function useFirestoreRealtime() {
@@ -10,6 +10,7 @@ export function useFirestoreRealtime() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   // For current auth state sync
@@ -25,6 +26,7 @@ export function useFirestoreRealtime() {
     let unsubscribeBookings: () => void;
     let unsubscribeReviews: () => void;
     let unsubscribeNotifications: () => void;
+    let unsubscribeBlogPosts: () => void;
     let unsubscribeUserDoc: (() => void) | null = null;
     let unsubscribeSitterDoc: (() => void) | null = null;
 
@@ -37,6 +39,7 @@ export function useFirestoreRealtime() {
       if (unsubscribeBookings) unsubscribeBookings();
       if (unsubscribeReviews) unsubscribeReviews();
       if (unsubscribeNotifications) unsubscribeNotifications();
+      if (unsubscribeBlogPosts) unsubscribeBlogPosts();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
 
@@ -152,6 +155,12 @@ export function useFirestoreRealtime() {
         console.error("Reviews listener error:", error);
         setLoading(false);
       });
+
+      unsubscribeBlogPosts = onSnapshot(collection(db, "blogPosts"), (snapshot) => {
+        const list: BlogPost[] = [];
+        snapshot.forEach((doc) => list.push(doc.data() as BlogPost));
+        setBlogPosts(list);
+      });
     });
 
     return () => {
@@ -172,6 +181,7 @@ export function useFirestoreRealtime() {
     bookings,
     reviews,
     notifications,
+    blogPosts,
     currentUser,
     currentSitterUser,
     loading,

@@ -24,9 +24,10 @@ import {
   UserX,
   UserCheck,
   ChevronRight,
-  Loader2
+  Loader2,
+  BookOpen
 } from "lucide-react";
-import { Language, User, Sitter, Booking } from "../types";
+import { Language, User, Sitter, Booking, BlogPost } from "../types";
 import {
   getAllUsersFromFirestore,
   updateUserBlockStatus,
@@ -39,6 +40,7 @@ interface AdministrationProps {
   users: User[];
   sitters: Sitter[];
   bookings: Booking[];
+  blogPosts: BlogPost[];
   onBackToHome: () => void;
 }
 
@@ -47,6 +49,7 @@ export default function Administration({
   users,
   sitters,
   bookings,
+  blogPosts,
   onBackToHome,
 }: AdministrationProps) {
   const isRtl = language === "AR";
@@ -61,7 +64,7 @@ export default function Administration({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog">(
     "dashboard",
   );
 
@@ -548,6 +551,18 @@ export default function Administration({
           >
             <ShieldAlert className="w-4 h-4" />
             Maintenance
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("blog")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+              activeTab === "blog"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            Blog Management
           </button>
         </nav>
 
@@ -1198,6 +1213,7 @@ export default function Administration({
                           <th className="py-4 px-6">Rôle</th>
                           <th className="py-4 px-6">Ville / City</th>
                           <th className="py-4 px-6">Animaux / Pets</th>
+                          <th className="py-4 px-6 text-center">Activation</th>
                           <th className="py-4 px-6 text-center">Statut</th>
                           <th className="py-4 px-6 text-right">Actions</th>
                         </tr>
@@ -1275,18 +1291,32 @@ export default function Administration({
                               )}
                             </td>
 
-                            {/* Status Badge */}
+                            {/* Activation Status */}
                             <td className="py-4 px-6 text-center">
-                              {user.isBlocked ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-100 text-red-700 text-[10px] font-black uppercase">
-                                  <X className="w-3 h-3" />
-                                  Bloqué (Blocked)
-                                </span>
+                              {user.role === 'sitter' ? (
+                                user.isActive ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateUserActivationStatus(user.id, false);
+                                    }}
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    Activé (Active)
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 text-[10px] font-black uppercase cursor-pointer"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      updateUserActivationStatus(user.id, true);
+                                    }}
+                                  >
+                                    <X className="w-3 h-3" />
+                                    En Attente (Pending)
+                                  </span>
+                                )
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase">
-                                  <Check className="w-3 h-3" />
-                                  Actif (Active)
-                                </span>
+                                <span className="text-gray-400 font-medium">N/A</span>
                               )}
                             </td>
 

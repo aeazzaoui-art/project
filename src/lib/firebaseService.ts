@@ -22,7 +22,7 @@ import {
   signOut 
 } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { User, Sitter, Booking, Message, Review, AppNotification } from '../types';
+import { User, Sitter, Booking, Message, Review, AppNotification, BlogPost } from '../types';
 import { SITTERS, REVIEWS } from '../data';
 
 export enum OperationType {
@@ -140,7 +140,8 @@ export async function signUpSitterWithAuth(email: string, password: string, sitt
     email: normalizedEmail, // Save normalized email
     role: 'sitter',
     city: sitterData.city,
-    pets: []
+    pets: [],
+    isActive: false // Default to inactive
   };
   
   await saveUser(newUser);
@@ -283,6 +284,19 @@ export async function updateUserBlockStatus(userId: string, isBlocked: boolean):
   try {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { isBlocked });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, path);
+  }
+}
+
+/**
+ * Update the activation status of a user in Firestore
+ */
+export async function updateUserActivationStatus(userId: string, isActive: boolean): Promise<void> {
+  const path = `users/${userId}`;
+  try {
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, { isActive });
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }
@@ -529,12 +543,55 @@ export async function addNotificationToFirestore(notification: AppNotification):
 /**
  * Mark Notification as read
  */
+/**
+ * Mark Notification as read
+ */
 export async function markNotificationAsReadInFirestore(notificationId: string): Promise<void> {
   try {
     const docRef = doc(db, 'notifications', notificationId);
     await updateDoc(docRef, { read: true });
   } catch (error) {
     console.error('Error updating notification read status:', error);
+  }
+}
+
+export async function getBlogPostsFromFirestore(): Promise<BlogPost[]> {
+  try {
+    const colRef = collection(db, 'blogPosts');
+    const snapshot = await getDocs(colRef);
+    const list: BlogPost[] = [];
+    snapshot.forEach((doc) => {
+      list.push(doc.data() as BlogPost);
+    });
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  } catch (error) {
+    console.error('Error fetching blog posts:', error);
+    return [];
+  }
+}
+
+export async function addBlogPostToFirestore(post: BlogPost): Promise<void> {
+  try {
+    await setDoc(doc(db, 'blogPosts', post.id), post);
+  } catch (error) {
+    console.error('Error adding blog post:', error);
+  }
+}
+
+export async function updateBlogPostInFirestore(post: BlogPost): Promise<void> {
+  try {
+    const docRef = doc(db, 'blogPosts', post.id);
+    await updateDoc(docRef, { ...post });
+  } catch (error) {
+    console.error('Error updating blog post:', error);
+  }
+}
+
+export async function deleteBlogPostFromFirestore(postId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'blogPosts', postId));
+  } catch (error) {
+    console.error('Error deleting blog post:', error);
   }
 }
 
