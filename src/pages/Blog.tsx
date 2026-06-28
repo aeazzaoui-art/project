@@ -11,12 +11,13 @@ interface BlogProps {
   language: Language;
   setActivePage: (page: ActivePage) => void;
   blogPosts: BlogPost[];
+  selectedPost: BlogPost | null;
+  setSelectedPost: (post: BlogPost | null) => void;
 }
 
-export default function Blog({ language, setActivePage, blogPosts }: BlogProps) {
+export default function Blog({ language, setActivePage, blogPosts, selectedPost, setSelectedPost }: BlogProps) {
   const isRtl = language === 'AR';
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
 
   // Filter posts based on search query
   const filteredPosts = blogPosts.filter(post => {

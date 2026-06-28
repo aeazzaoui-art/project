@@ -14,7 +14,9 @@ import {
   Pet,
   Review,
   AppNotification,
+  BlogPost,
 } from "./types";
+import { getSlug } from "./utils/slug";
 import { translations } from "./translations";
 import { SITTERS, REVIEWS } from "./data";
 import {
@@ -108,6 +110,8 @@ export default function App() {
     },
   );
 
+  const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+
   const [bookings, setBookings] = useState<Booking[]>(() => {
     const saved = localStorage.getItem("amuch_bookings");
     return saved ? JSON.parse(saved) : [];
@@ -174,25 +178,53 @@ export default function App() {
     }
   }, [realtimeCurrentUser, realtimeCurrentSitterUser, authLoading, language]);
 
-  // Sync URL Path with activePage (handling /adminstration or /administration)
+  // Sync URL Path with activePage (handling /adminstration, /administration, /blog, and dynamic article slugs)
   useEffect(() => {
     const syncPathWithPage = () => {
       const path = window.location.pathname;
       if (path === "/administration" || path === "/adminstration") {
         setActivePage("administration");
-      } else if (activePage === "administration") {
+      } else if (path === "/blog") {
+        setActivePage("blog");
+        setSelectedBlogPost(null);
+      } else if (path === "/privacy") {
+        setActivePage("privacy");
+      } else if (path === "/terms") {
+        setActivePage("terms");
+      } else if (path === "/faq") {
+        setActivePage("faq");
+      } else if (path === "/about") {
+        setActivePage("about");
+      } else if (path === "/search") {
+        setActivePage("search");
+      } else if (path === "/signup-owner") {
+        setActivePage("signup-owner");
+      } else if (path === "/signup-sitter") {
+        setActivePage("signup-sitter");
+      } else if (path === "/owner-dashboard") {
+        setActivePage("owner-dashboard");
+      } else if (path === "/sitter-dashboard") {
+        setActivePage("sitter-dashboard");
+      } else if (path === "/" || path === "") {
         setActivePage("home");
+      } else {
+        // Dynamic article slug path (e.g., /title-of-the-article)
+        const slug = path.substring(1);
+        const matchedPost = realtimeBlogPosts.find(post => getSlug(post.title) === slug);
+        if (matchedPost) {
+          setActivePage("blog");
+          setSelectedBlogPost(matchedPost);
+        } else {
+          setActivePage("home");
+        }
       }
     };
 
     window.addEventListener("popstate", syncPathWithPage);
-    // Run once on mount to handle direct URL visits
-    const initialPath = window.location.pathname;
-    if (initialPath === "/administration" || initialPath === "/adminstration") {
-      setActivePage("administration");
-    }
+    // Run to handle direct URL visits or state refresh
+    syncPathWithPage();
     return () => window.removeEventListener("popstate", syncPathWithPage);
-  }, []);
+  }, [realtimeBlogPosts]);
 
   // Push Page state to browser history pathname
   useEffect(() => {
@@ -201,12 +233,36 @@ export default function App() {
       if (path !== "/adminstration" && path !== "/administration") {
         window.history.pushState({}, "", "/administration");
       }
+    } else if (activePage === "blog") {
+      if (selectedBlogPost) {
+        const slug = getSlug(selectedBlogPost.title);
+        if (path !== `/${slug}`) {
+          window.history.pushState({}, "", `/${slug}`);
+        }
+      } else {
+        if (path !== "/blog") {
+          window.history.pushState({}, "", "/blog");
+        }
+      }
     } else {
-      if (path === "/adminstration" || path === "/administration") {
-        window.history.pushState({}, "", "/");
+      const standardPaths: Record<string, string> = {
+        'home': '/',
+        'search': '/search',
+        'signup-owner': '/signup-owner',
+        'signup-sitter': '/signup-sitter',
+        'owner-dashboard': '/owner-dashboard',
+        'sitter-dashboard': '/sitter-dashboard',
+        'about': '/about',
+        'faq': '/faq',
+        'privacy': '/privacy',
+        'terms': '/terms',
+      };
+      const targetPath = standardPaths[activePage] || "/";
+      if (path !== targetPath) {
+        window.history.pushState({}, "", targetPath);
       }
     }
-  }, [activePage]);
+  }, [activePage, selectedBlogPost]);
 
   // Modal for quick booking flow
   const [bookingModal, setBookingModal] = useState<{
@@ -884,6 +940,8 @@ export default function App() {
             language={language}
             setActivePage={setActivePage}
             blogPosts={realtimeBlogPosts}
+            selectedPost={selectedBlogPost}
+            setSelectedPost={setSelectedBlogPost}
           />
         )}
 
