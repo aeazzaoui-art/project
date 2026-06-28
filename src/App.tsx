@@ -49,6 +49,7 @@ import SitterDashboard from "./pages/SitterDashboard";
 import ChatView from "./pages/ChatView";
 import About from "./pages/About";
 import FAQView from "./pages/FAQView";
+import Blog from "./pages/Blog";
 import Administration from "./pages/Administration";
 
 import { useFirestoreRealtime } from "./lib/useFirestoreRealtime";
@@ -874,6 +875,14 @@ export default function App() {
 
         {activePage === "about" && (
           <About language={language} setActivePage={setActivePage} />
+        )}
+
+        {activePage === "blog" && (
+          <Blog
+            language={language}
+            setActivePage={setActivePage}
+            blogPosts={realtimeBlogPosts}
+          />
         )}
 
         {activePage === "faq" && (

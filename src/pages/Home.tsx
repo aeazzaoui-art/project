@@ -411,7 +411,8 @@ export default function Home({ language, setActivePage, blogPosts = [] }: HomePr
                     <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
                       <button
                         onClick={() => {
-                          alert(`${post.title}\n\n${post.content}`);
+                          setActivePage('blog');
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
                         className="text-[#FF6B00] hover:text-[#E55A00] text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all group-hover:translate-x-1 cursor-pointer"
                       >
@@ -421,6 +422,19 @@ export default function Home({ language, setActivePage, blogPosts = [] }: HomePr
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* View all blog posts button */}
+            <div className="mt-12 text-center">
+              <button
+                onClick={() => {
+                  setActivePage('blog');
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-white border-2 border-gray-150 hover:border-[#FF6B00] hover:text-[#FF6B00] text-gray-800 font-extrabold text-xs tracking-wider uppercase rounded-xl transition-all shadow-xs cursor-pointer"
+              >
+                {language === 'FR' ? "Voir tous les articles" : language === 'AR' ? "عرض جميع المقالات" : "View all articles"}
+              </button>
             </div>
           </div>
         </section>

@@ -16,6 +16,7 @@ export type ActivePage =
   | 'chat'
   | 'about'
   | 'faq'
+  | 'blog'
   | 'administration';
 
 export type AnimalType = 'chien' | 'chat' | 'lapin' | 'oiseau' | 'autre';
@@ -58,6 +59,7 @@ export interface Sitter {
   capacityMax: number;
   phone: string;
   availabilities: string[]; // Dates stored as YYYY-MM-DD
+  isActive?: boolean; // Sitter activation status
 }
 
 export interface Booking {

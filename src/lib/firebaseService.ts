@@ -130,6 +130,7 @@ export async function signUpSitterWithAuth(email: string, password: string, sitt
   const newSitter: Sitter = {
     ...sitterData,
     id: uid,
+    isActive: false, // Default to inactive until activated by admin
   };
   
   // Create User wrapper
@@ -297,6 +298,14 @@ export async function updateUserActivationStatus(userId: string, isActive: boole
   try {
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, { isActive });
+
+    // Also update Sitter profile if it exists
+    const sitterRef = doc(db, 'sitters', userId);
+    try {
+      await updateDoc(sitterRef, { isActive });
+    } catch (sitterErr) {
+      // It's fine if the document doesn't exist (e.g. for regular owners who are not sitters)
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.WRITE, path);
   }

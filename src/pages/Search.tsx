@@ -50,6 +50,11 @@ export default function Search({ language, sitters, reviews, onSelectSitter, onB
   // Live filtering logic
   const filteredSitters = useMemo(() => {
     return sitters.filter((sitter) => {
+      // 0. Active status check (new sitters are default inactive until approved)
+      if (sitter.isActive === false) {
+        return false;
+      }
+
       // 1. City check
       if (selectedCity && sitter.city.toLowerCase() !== selectedCity.toLowerCase()) {
         return false;

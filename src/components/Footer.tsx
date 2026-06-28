@@ -130,10 +130,10 @@ export default function Footer({ language, setLanguage, setActivePage }: FooterP
               </li>
               <li>
                 <button 
-                  onClick={() => { setActivePage('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  onClick={() => { setActivePage('blog'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                   className="hover:text-[#FF6B00] transition-colors text-left cursor-pointer"
                 >
-                  Blog
+                  {t.nav_blog}
                 </button>
               </li>
             </ul>
