@@ -1361,7 +1361,12 @@ export default function Administration({
 
                             {/* Email */}
                             <td className="py-4 px-6 text-gray-600 font-semibold">
-                              {user.email}
+                              <span className="block text-xs">{user.email}</span>
+                              {(user.phone || getSitterInfo(user.id)?.phone) && (
+                                <span className="block text-[10px] text-gray-400 font-bold mt-0.5">
+                                  📞 {user.phone || getSitterInfo(user.id)?.phone}
+                                </span>
+                              )}
                             </td>
 
                             {/* Role Badge */}
@@ -1869,7 +1874,8 @@ export default function Administration({
                     Numéro de Téléphone
                   </span>
                   <span className="text-xs font-bold text-gray-800">
-                    {getSitterInfo(selectedUserDetails.id)?.phone ||
+                    {selectedUserDetails.phone ||
+                      getSitterInfo(selectedUserDetails.id)?.phone ||
                       "Non renseigné"}
                   </span>
                 </div>

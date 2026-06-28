@@ -54,9 +54,6 @@ export default function SignUpSitter({
   const [priceWeekend, setPriceWeekend] = useState(280);
 
   const [phone, setPhone] = useState('');
-  const [smsCode, setSmsCode] = useState('');
-  const [isSmsSent, setIsSmsSent] = useState(false);
-  const [isSmsVerified, setIsSmsVerified] = useState(false);
   const [terms, setTerms] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [photoUrl, setPhotoUrl] = useState('');
@@ -67,25 +64,6 @@ export default function SignUpSitter({
 
   const togglePet = (type: AnimalType) => {
     setAcceptedPets((prev) => ({ ...prev, [type]: !prev[type] }));
-  };
-
-  const sendSimulatedSms = () => {
-    if (!phone) {
-      setError(language === 'FR' ? "Entrez votre numéro de téléphone." : "أدخل رقم هاتفك أولاً");
-      return;
-    }
-    setError('');
-    setIsSmsSent(true);
-    alert(language === 'FR' ? "AMUCH : Votre code de vérification SMS est : 2026" : "أموش: رمز التحقق الخاص بك هو: 2026");
-  };
-
-  const verifySmsCode = () => {
-    if (smsCode === '2026') {
-      setIsSmsVerified(true);
-      setError('');
-    } else {
-      setError(language === 'FR' ? "Code incorrect. Veuillez saisir 2026." : "الرمز غير صحيح. يرجى إدخال 2026");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -108,8 +86,14 @@ export default function SignUpSitter({
       setError('');
       setStep(4);
     } else if (step === 4) {
-      if (!isSmsVerified) {
-        setError(language === 'FR' ? "Veuillez d'abord vérifier votre numéro de téléphone." : "يرجى التحقق من رقم habtfc أولاً.");
+      if (!phone.trim() || phone.trim().length < 8) {
+        setError(
+          language === 'FR'
+            ? "Veuillez saisir un numéro de téléphone valide."
+            : language === 'AR'
+            ? "الرجاء إدخال رقم هاتف صالح."
+            : "Please enter a valid phone number."
+        );
         return;
       }
       if (!terms) {
@@ -502,62 +486,30 @@ export default function SignUpSitter({
               {/* STEP 4: TRUST VERIFICATION & SUBMIT */}
               {step === 4 && (
                 <div className="space-y-6">
-                  {/* SMS verify simulator */}
+                  {/* SMS verify simulator replaced with simple contact phone input */}
                   <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-4">
                     <h4 className="text-sm font-bold text-[#111111] flex items-center gap-2">
                       <Smartphone className="w-5 h-5 text-[#FF6B00]" />
-                      {language === 'FR' ? "Sécurité : Vérification SMS" : "Security: SMS Verification"}
+                      {language === 'FR' ? "Coordonnées de contact" : language === 'AR' ? "معلومات الاتصال" : "Contact Information"}
                     </h4>
 
                     <div className="space-y-3">
                       <label className="text-xs font-bold text-gray-500 uppercase">{t.signup_sitter_phone}</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+212 6 12 34 56 78"
-                          disabled={isSmsVerified}
-                          className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00]"
-                        />
-                        <button
-                          type="button"
-                          onClick={sendSimulatedSms}
-                          disabled={isSmsVerified}
-                          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 disabled:opacity-50 text-[#111111] text-xs font-bold rounded-xl transition-colors cursor-pointer"
-                        >
-                          {isSmsSent ? (language === 'FR' ? "Renvoyer" : "إعادة إرسال") : (language === 'FR' ? "Recevoir le code" : "استلام الرمز")}
-                        </button>
-                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+212 6 12 34 56 78"
+                        className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors"
+                      />
+                      <p className="text-[11px] text-gray-500 leading-normal">
+                        {language === 'FR' 
+                          ? "Votre numéro de téléphone est indispensable pour recevoir les demandes de réservation des propriétaires d'animaux par SMS ou WhatsApp."
+                          : language === 'AR'
+                            ? "رقم هاتفك ضروري لتلقي طلبات الحجز من أصحاب الحيوانات الأليفة عبر الرسائل القصيرة أو الواتساب."
+                            : "Your phone number is essential to receive booking requests from pet owners via SMS or WhatsApp."}
+                      </p>
                     </div>
-
-                    {isSmsSent && !isSmsVerified && (
-                      <div className="space-y-3 pt-2">
-                        <label className="text-xs font-bold text-gray-500 uppercase">{t.signup_sitter_sms}</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={smsCode}
-                            onChange={(e) => setSmsCode(e.target.value)}
-                            placeholder="Entrez 2026"
-                            className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00]"
-                          />
-                          <button
-                            type="button"
-                            onClick={verifySmsCode}
-                            className="px-5 py-2 bg-[#FF6B00] text-white text-xs font-bold rounded-xl hover:bg-[#E55A00] transition-colors cursor-pointer"
-                          >
-                            {language === 'FR' ? "Valider" : "تأكيد"}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {isSmsVerified && (
-                      <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-xs font-bold rounded-xl text-center">
-                        ✓ {language === 'FR' ? "Numéro de téléphone validé avec succès !" : "Phone number verified!"}
-                      </div>
-                    )}
                   </div>
 
                   {/* Conditions checkbox */}

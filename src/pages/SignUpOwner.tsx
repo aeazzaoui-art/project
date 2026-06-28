@@ -44,6 +44,7 @@ export default function SignUpOwner({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [city, setCity] = useState('Casablanca');
@@ -80,22 +81,29 @@ export default function SignUpOwner({
   const updatePetField = (field: keyof Pet, value: any) => {
     setPets((prev) => {
       const copy = [...prev];
-      copy[currentPetIdx] = {
+      const updatedPet = {
         ...copy[currentPetIdx],
-        [field]: value,
-        // Automatically match icon on type change
-        photoUrl: field === 'type' 
-          ? (value === 'chien' ? '🐶' : value === 'chat' ? '🐱' : value === 'lapin' ? '🐰' : value === 'oiseau' ? '🦜' : '🐾')
-          : copy[currentPetIdx].photoUrl
+        [field]: value
       };
+      // If we changed the type, and they haven't uploaded a custom photo, let's update the emoji icon
+      if (field === 'type') {
+        const defaultEmojis: Record<string, string> = {
+          chien: '🐶',
+          chat: '🐱',
+          lapin: '🐰',
+          oiseau: '🦜'
+        };
+        updatedPet.photoUrl = defaultEmojis[value] || '🐾';
+      }
+      copy[currentPetIdx] = updatedPet;
       return copy;
     });
   };
 
   const handleStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
-      setError(language === 'FR' ? 'Veuillez remplir tous les champs requis.' : 'الرجاء ملء جميع الحقول المطلوبة');
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !phone.trim() || !password.trim()) {
+      setError(language === 'FR' ? 'Veuillez remplir tous les champs requis, y compris le numéro de téléphone.' : 'الرجاء ملء جميع الحقول المطلوبة، بما في ذلك رقم الهاتف');
       return;
     }
     if (password !== confirmPassword) {
@@ -134,7 +142,8 @@ export default function SignUpOwner({
         email,
         role: 'owner',
         city,
-        pets: activePets
+        pets: activePets,
+        phone: phone.trim()
       };
       
       const newUser = await signUpOwnerWithAuth(email, password, userData);
@@ -511,6 +520,19 @@ export default function SignUpOwner({
                   </div>
 
                   <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase">{t.signup_sitter_phone} <span className="text-red-500">*</span></label>
+                    <input
+                      id="signup-owner-phone-input"
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00]"
+                      placeholder="+212 6 12 34 56 78"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
                     <label className="text-xs font-bold text-gray-500 uppercase">{t.search_city} <span className="text-red-500">*</span></label>
                     <select
                       id="signup-owner-city-select"
@@ -586,7 +608,18 @@ export default function SignUpOwner({
                             : 'border-gray-200 bg-transparent text-gray-500'
                         }`}
                       >
-                        {pet.name ? `${pet.photoUrl} ${pet.name}` : `${language === 'FR' ? "Animal n°" : "حيوان رقم"} ${idx + 1}`}
+                        {pet.name ? (
+                          <span className="flex items-center gap-1.5 inline-flex">
+                            {pet.photoUrl && (pet.photoUrl.startsWith('data:image') || pet.photoUrl.startsWith('http')) ? (
+                              <img src={pet.photoUrl} alt="" className="w-4 h-4 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                            ) : (
+                              <span>{pet.photoUrl || '🐾'}</span>
+                            )}
+                            <span>{pet.name}</span>
+                          </span>
+                        ) : (
+                          `${language === 'FR' ? "Animal n°" : "حيوان رقم"} ${idx + 1}`
+                        )}
                       </button>
                     ))}
                     <button
@@ -754,7 +787,13 @@ export default function SignUpOwner({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {pets.map((pet) => (
                         <div key={pet.id} className="border border-gray-200 rounded-xl p-4 flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-lg">{pet.photoUrl}</div>
+                          <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-lg overflow-hidden shrink-0">
+                            {pet.photoUrl && (pet.photoUrl.startsWith('data:image') || pet.photoUrl.startsWith('http')) ? (
+                              <img src={pet.photoUrl} alt={pet.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                            ) : (
+                              <span>{pet.photoUrl || '🐾'}</span>
+                            )}
+                          </div>
                           <div>
                             <h5 className="font-bold text-sm text-[#111111]">{pet.name}</h5>
                             <p className="text-[11px] text-gray-500 capitalize">{pet.breed} &bull; {pet.age}</p>

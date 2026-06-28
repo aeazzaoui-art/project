@@ -43,6 +43,7 @@ export interface User {
   isBlocked?: boolean;
   isActive?: boolean; // New field for sitter activation
   photoUrl?: string;
+  phone?: string;
 }
 
 export interface Sitter {
