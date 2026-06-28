@@ -50,6 +50,8 @@ import ChatView from "./pages/ChatView";
 import About from "./pages/About";
 import FAQView from "./pages/FAQView";
 import Blog from "./pages/Blog";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import Administration from "./pages/Administration";
 
 import { useFirestoreRealtime } from "./lib/useFirestoreRealtime";
@@ -882,6 +884,20 @@ export default function App() {
             language={language}
             setActivePage={setActivePage}
             blogPosts={realtimeBlogPosts}
+          />
+        )}
+
+        {activePage === "privacy" && (
+          <Privacy
+            language={language}
+            setActivePage={setActivePage}
+          />
+        )}
+
+        {activePage === "terms" && (
+          <Terms
+            language={language}
+            setActivePage={setActivePage}
           />
         )}
 

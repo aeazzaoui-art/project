@@ -10,6 +10,7 @@ import { translations } from '../translations';
 import { SITTERS } from '../data';
 import { signUpOwnerWithAuth, loginWithAuth, getSitter } from '../lib/firebaseService';
 import SignUpSitter from './SignUpSitter';
+import { TermsModal } from './Terms';
 
 interface SignUpOwnerProps {
   language: Language;
@@ -64,6 +65,7 @@ export default function SignUpOwner({
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoginSubmitted, setIsLoginSubmitted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
   // Handle adding another pet
   const handleAddAnotherPet = () => {
@@ -118,7 +120,7 @@ export default function SignUpOwner({
 
   const handleFinalSubmit = async () => {
     if (!termsAccepted) {
-      setError(language === 'FR' ? "Vous devez accepter les conditions d'utilisation." : "يجب الموافقة على شروط الاستخدام.");
+      setIsTermsModalOpen(true);
       return;
     }
 
@@ -797,7 +799,6 @@ export default function SignUpOwner({
                       </button>
                     </div>
                   </div>
-
                 </div>
               )}
             </>
@@ -806,6 +807,23 @@ export default function SignUpOwner({
           </div>
         )}
       </div>
+
+      <TermsModal
+        isOpen={isTermsModalOpen}
+        onClose={() => setIsTermsModalOpen(false)}
+        onAgree={() => {
+          setTermsAccepted(true);
+          setIsTermsModalOpen(false);
+          // Trigger form submit immediately on acceptance
+          setTimeout(() => {
+            const btn = document.getElementById('signup-owner-final-submit-btn');
+            if (btn) {
+              btn.click();
+            }
+          }, 100);
+        }}
+        language={language}
+      />
     </div>
   );
 }

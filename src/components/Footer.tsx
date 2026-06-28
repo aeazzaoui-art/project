@@ -204,9 +204,26 @@ export default function Footer({ language, setLanguage, setActivePage }: FooterP
             &copy; 2026 AMUCH &mdash; {t.footer_rights}
           </div>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-white transition-colors">{language === 'FR' ? "Mentions légales" : "الشروط القانونية"}</a>
+            <button 
+              onClick={() => { setActivePage('about'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="hover:text-white transition-colors cursor-pointer text-left"
+            >
+              {language === 'FR' ? "Mentions légales" : language === 'AR' ? "الشروط القانونية" : "Legal Mentions"}
+            </button>
             <span>&middot;</span>
-            <a href="#" className="hover:text-white transition-colors">{language === 'FR' ? "Confidentialité" : "سياسة الخصوصية"}</a>
+            <button 
+              onClick={() => { setActivePage('privacy'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="hover:text-white transition-colors cursor-pointer text-left"
+            >
+              {language === 'FR' ? "Confidentialité" : language === 'AR' ? "سياسة الخصوصية" : "Privacy Policy"}
+            </button>
+            <span>&middot;</span>
+            <button 
+              onClick={() => { setActivePage('terms'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+              className="hover:text-white transition-colors cursor-pointer text-left"
+            >
+              {language === 'FR' ? "Conditions Générales" : language === 'AR' ? "الشروط والأحكام" : "Terms & Conditions"}
+            </button>
           </div>
         </div>
       </div>

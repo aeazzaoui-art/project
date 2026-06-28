@@ -8,6 +8,7 @@ import { UserCheck, Sparkles, FileText, Smartphone, Shield, ArrowRight, ArrowLef
 import { Language, User, Sitter, AnimalType } from '../types';
 import { translations } from '../translations';
 import { signUpSitterWithAuth } from '../lib/firebaseService';
+import { TermsModal } from './Terms';
 
 interface SignUpSitterProps {
   language: Language;
@@ -57,6 +58,7 @@ export default function SignUpSitter({
   const [isSmsSent, setIsSmsSent] = useState(false);
   const [isSmsVerified, setIsSmsVerified] = useState(false);
   const [terms, setTerms] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [photoUrl, setPhotoUrl] = useState('');
 
   const [error, setError] = useState('');
@@ -111,7 +113,7 @@ export default function SignUpSitter({
         return;
       }
       if (!terms) {
-        setError(language === 'FR' ? "Vous devez accepter nos conditions." : "يجب الموافقة على الشروط أولاً.");
+        setIsTermsModalOpen(true);
         return;
       }
 
@@ -598,6 +600,22 @@ export default function SignUpSitter({
           </div>
         )}
 
+        <TermsModal
+          isOpen={isTermsModalOpen}
+          onClose={() => setIsTermsModalOpen(false)}
+          onAgree={() => {
+            setTerms(true);
+            setIsTermsModalOpen(false);
+            // Trigger final form submit immediately on acceptance
+            setTimeout(() => {
+              const submitBtn = document.querySelector('button[type="submit"]') as HTMLButtonElement;
+              if (submitBtn) {
+                submitBtn.click();
+              }
+            }, 100);
+          }}
+          language={language}
+        />
     </>
   );
 

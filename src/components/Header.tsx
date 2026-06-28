@@ -57,6 +57,7 @@ export default function Header({
     { label: t.nav_find_sitter, page: 'search' },
     { label: t.nav_become_sitter, page: 'signup-sitter' },
     { label: t.nav_about, page: 'about' },
+    { label: t.nav_blog, page: 'blog' },
     { label: t.nav_faq, page: 'faq' }
   ];
 

@@ -17,6 +17,8 @@ export type ActivePage =
   | 'about'
   | 'faq'
   | 'blog'
+  | 'privacy'
+  | 'terms'
   | 'administration';
 
 export type AnimalType = 'chien' | 'chat' | 'lapin' | 'oiseau' | 'autre';
