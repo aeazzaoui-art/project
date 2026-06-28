@@ -7,7 +7,6 @@ import React from 'react';
 import { Heart, ShieldCheck, Users, Sparkles, Map, Award } from 'lucide-react';
 import { Language, ActivePage } from '../types';
 import { translations } from '../translations';
-import { TEAM } from '../data';
 
 interface AboutProps {
   language: Language;
@@ -119,35 +118,6 @@ export default function About({ language, setActivePage }: AboutProps) {
               <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">{language === 'FR' ? "Note Moyenne" : "متوسط التقييم"}</span>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* 4. TEAM SECTION */}
-      <section className="py-16 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <h2 className="text-3xl font-extrabold text-[#111111] mb-4">
-            {t.about_team_title}
-          </h2>
-          <div className="w-12 h-1 bg-[#FF6B00] mx-auto rounded-full"></div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {TEAM.map((member, idx) => (
-            <div key={idx} className="bg-white border border-[#E0E0E0] rounded-2xl p-6 text-center space-y-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="w-20 h-20 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] font-black text-2xl flex items-center justify-center mx-auto border-2 border-[#FF6B00]/20">
-                {member.photoUrl}
-              </div>
-              <div>
-                <h4 className="font-extrabold text-base text-[#111111]">{member.name}</h4>
-                <p className="text-xs font-semibold text-[#FF6B00] mt-1 uppercase tracking-wide">{t[member.roleKey]}</p>
-              </div>
-              <p className="text-[11px] text-gray-500 leading-relaxed">
-                {language === 'FR' 
-                  ? "Dévoué au bonheur des animaux de compagnie et à l'excellence opérationnelle au quotidien."
-                  : "مكرس لإسعاد الحيوانات الأليفة وضمان جودة الخدمات والسلامة اليومية."}
-              </p>
-            </div>
-          ))}
         </div>
       </section>
 

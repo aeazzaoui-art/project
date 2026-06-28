@@ -7,6 +7,7 @@ import React from 'react';
 import { PawPrint, Mail, Phone, Flame, ShieldAlert, Facebook, Instagram, Smartphone } from 'lucide-react';
 import { Language, ActivePage } from '../types';
 import { translations } from '../translations';
+import { AmuchLogo } from './AmuchLogo';
 
 interface FooterProps {
   language: Language;
@@ -32,10 +33,10 @@ export default function Footer({ language, setLanguage, setActivePage }: FooterP
           <div className="lg:col-span-2">
             <div 
               onClick={() => { setActivePage('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-2 mb-4 cursor-pointer group w-fit"
+              className="flex items-center gap-2.5 mb-4 cursor-pointer group w-fit"
             >
-              <div className="p-2 bg-[#FF6B00] rounded-xl text-white group-hover:bg-[#E55A00] transition-colors">
-                <PawPrint className="w-5 h-5" />
+              <div className="p-1.5 bg-[#FF6B00] rounded-xl text-white group-hover:bg-[#E55A00] transition-colors shadow-sm">
+                <AmuchLogo variant="white" className="w-6 h-6" />
               </div>
               <span className="font-extrabold text-2xl tracking-wider text-white">
                 AMUCH

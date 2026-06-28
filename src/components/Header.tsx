@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { Menu, X, PawPrint, User as UserIcon, Globe, LogOut, Bell } from 'lucide-react';
 import { Language, ActivePage, User, AppNotification } from '../types';
 import { translations } from '../translations';
+import { AmuchLogo } from './AmuchLogo';
 
 interface HeaderProps {
   language: Language;
@@ -77,13 +78,13 @@ export default function Header({
         {/* Left Side: Logo */}
         <div 
           onClick={() => { setActivePage('home'); setMobileMenuOpen(false); }}
-          className="flex items-center gap-2 cursor-pointer group"
+          className="flex items-center gap-2.5 cursor-pointer group"
           id="header-logo"
         >
-          <div className="p-2 bg-[#FF6B00] rounded-xl text-white group-hover:bg-[#E55A00] transition-colors">
-            <PawPrint className="w-6 h-6" />
+          <div className="p-1.5 bg-[#FF6B00] rounded-xl text-white group-hover:bg-[#E55A00] transition-colors shadow-sm">
+            <AmuchLogo variant="white" className="w-7 h-7" />
           </div>
-          <span className="font-sans font-extrabold text-2xl tracking-wider text-[#FF6B00]">
+          <span className="font-sans font-extrabold text-2xl tracking-wider text-[#FF6B00] group-hover:text-[#E55A00] transition-colors">
             AMUCH
           </span>
         </div>

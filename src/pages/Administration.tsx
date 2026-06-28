@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { Language, User, Sitter, Booking, BlogPost } from "../types";
 import { auth } from "../firebase";
+import { AmuchLogo } from "../components/AmuchLogo";
 import {
   getAllUsersFromFirestore,
   updateUserBlockStatus,
@@ -485,15 +486,15 @@ export default function Administration({
       >
         <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
           <div className="flex justify-center items-center gap-2 mb-2">
-            <span className="text-3xl">🛡️</span>
-            <span className="text-3xl font-black text-[#111111] tracking-tight">
+            <AmuchLogo variant="orange" className="w-10 h-10" />
+            <span className="text-3xl font-normal text-[#111111] tracking-tight">
               AMUCH
             </span>
           </div>
-          <span className="inline-flex items-center gap-1 bg-[#FF6B00]/10 text-[#FF6B00] text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-6">
+          <span className="inline-flex items-center gap-1 bg-[#FF6B00]/10 text-[#FF6B00] text-xs font-normal px-3 py-1 rounded-full uppercase tracking-wider mb-6">
             Espace Administration
           </span>
-          <h2 className="text-2xl font-extrabold text-[#111111] tracking-tight">
+          <h2 className="text-2xl font-normal text-[#111111] tracking-tight">
             Connexion Administrateur
           </h2>
           <p className="mt-2 text-sm text-gray-500">
@@ -596,23 +597,23 @@ export default function Administration({
         {/* Brand Header */}
         <div className="p-6 border-b border-gray-50 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <span className="text-2xl">🐕</span>
-            <span className="text-xl font-black text-[#111111] tracking-tight">
+            <AmuchLogo variant="orange" className="w-6 h-6" />
+            <span className="text-xl font-normal text-[#111111] tracking-tight">
               AMUCH
             </span>
           </div>
-          <span className="bg-[#FF6B00]/10 text-[#FF6B00] text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase">
+          <span className="bg-[#FF6B00]/10 text-[#FF6B00] text-[9px] font-normal px-2 py-0.5 rounded-full uppercase">
             ADMIN
           </span>
         </div>
 
         {/* Logged in Admin Profile */}
         <div className="p-4 mx-4 my-3 bg-gray-50 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[#FF6B00] text-white flex items-center justify-center font-bold text-sm shadow-inner">
+          <div className="w-10 h-10 rounded-full bg-[#FF6B00] text-white flex items-center justify-center font-normal text-sm shadow-inner">
             AA
           </div>
           <div className="overflow-hidden">
-            <h4 className="text-xs font-black text-gray-800 truncate">
+            <h4 className="text-xs font-normal text-gray-800 truncate">
               Abdou El Azzaoui
             </h4>
             <span className="text-[10px] text-gray-400 truncate block">
@@ -626,7 +627,7 @@ export default function Administration({
           <button
             type="button"
             onClick={() => setActiveTab("dashboard")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               activeTab === "dashboard"
                 ? "bg-[#FF6B00]/10 text-[#FF6B00]"
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -638,7 +639,7 @@ export default function Administration({
           <button
             type="button"
             onClick={() => setActiveTab("users")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               activeTab === "users"
                 ? "bg-[#FF6B00]/10 text-[#FF6B00]"
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -650,7 +651,7 @@ export default function Administration({
           <button
             type="button"
             onClick={() => setActiveTab("maintenance")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               activeTab === "maintenance"
                 ? "bg-[#FF6B00]/10 text-[#FF6B00]"
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -662,7 +663,7 @@ export default function Administration({
           <button
             type="button"
             onClick={() => setActiveTab("blog")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               activeTab === "blog"
                 ? "bg-[#FF6B00]/10 text-[#FF6B00]"
                 : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
@@ -698,13 +699,13 @@ export default function Administration({
         {/* Header toolbar */}
         <header className="h-16 bg-white border-b border-gray-100 px-8 flex justify-between items-center shrink-0">
           <div>
-            <h2 className="text-sm font-black text-gray-900 uppercase tracking-wider">
+            <h2 className="text-sm font-medium text-gray-900 uppercase tracking-wider">
               {activeTab === "dashboard"
                 ? "Vue Globale & Métriques"
                 : "Gestion des Comptes Utilisateurs"}
             </h2>
           </div>
-          <div className="flex items-center gap-4 text-xs font-semibold text-gray-400">
+          <div className="flex items-center gap-4 text-xs font-normal text-gray-400">
             <span>
               {activeTab === "maintenance" ? (language === "FR" ? "Outils système & nettoyage" : "System Tools & Cleanup") : ""}
             </span>
@@ -721,7 +722,7 @@ export default function Administration({
               )}
             </span>
             <div className="h-4 w-px bg-gray-200"></div>
-            <span className="text-[#FF6B00] flex items-center gap-1 font-bold">
+            <span className="text-[#FF6B00] flex items-center gap-1 font-medium">
               <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
               Live Firebase Sync
             </span>
@@ -736,10 +737,10 @@ export default function Administration({
               {/* Date Filter Section */}
               <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                  <h3 className="text-lg font-black text-gray-900 leading-tight">
+                  <h3 className="text-lg font-medium text-gray-900 leading-tight">
                     Filtre par période
                   </h3>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+                  <p className="text-[10px] text-gray-400 font-normal uppercase tracking-wider mt-1">
                     Ajuster les statistiques affichées
                   </p>
                 </div>
