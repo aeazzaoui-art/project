@@ -4,17 +4,18 @@
  */
 
 import React from 'react';
-import { PawPrint, Calendar, Star, Users, ShieldCheck, Heart, MapPin, MessageSquare } from 'lucide-react';
-import { Language, ActivePage } from '../types';
+import { PawPrint, Calendar, Star, Users, ShieldCheck, Heart, MapPin, MessageSquare, BookOpen } from 'lucide-react';
+import { Language, ActivePage, BlogPost } from '../types';
 import { translations } from '../translations';
 import { CITIES } from '../data';
 
 interface HomeProps {
   language: Language;
   setActivePage: (page: ActivePage) => void;
+  blogPosts?: BlogPost[];
 }
 
-export default function Home({ language, setActivePage }: HomeProps) {
+export default function Home({ language, setActivePage, blogPosts = [] }: HomeProps) {
   const t = translations[language];
   const isRtl = language === 'AR';
 
@@ -353,6 +354,77 @@ export default function Home({ language, setActivePage }: HomeProps) {
           </div>
         </div>
       </section>
+
+      {/* BLOG SECTION */}
+      {blogPosts && blogPosts.length > 0 && (
+        <section className="py-20 bg-white border-t border-gray-100">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-2xl mx-auto text-center mb-16">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#FF6B00]/10 text-[#FF6B00] text-xs font-bold tracking-wider uppercase mb-3">
+                📰 {language === 'FR' ? "Actualités & Conseils" : language === 'AR' ? "أخبار ونصائح" : "News & Tips"}
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111111] mb-4">
+                {language === 'FR' ? "Le Blog de l'AMUCH" : language === 'AR' ? "مدونة أموش" : "The AMUCH Blog"}
+              </h2>
+              <div className="w-16 h-1 bg-[#FF6B00] mx-auto rounded-full mb-4"></div>
+              <p className="text-sm text-gray-500 font-medium">
+                {language === 'FR' 
+                  ? "Retrouvez nos derniers conseils pour prendre soin de vos compagnons à quatre pattes."
+                  : language === 'AR'
+                  ? "اكتشف أحدث النصائح لرعاية حيواناتك الأليفة."
+                  : "Find our latest tips for taking care of your four-legged companions."}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {blogPosts.map((post) => (
+                <div key={post.id} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-lg hover:scale-[1.01] transition-all duration-300 flex flex-col h-full group">
+                  {post.imageUrl ? (
+                    <div className="h-48 overflow-hidden relative">
+                      <img
+                        src={post.imageUrl}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-48 bg-orange-50/50 flex items-center justify-center text-orange-500 relative">
+                      <BookOpen className="w-12 h-12 stroke-1" />
+                    </div>
+                  )}
+
+                  <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
+                        <span className="flex items-center gap-1 font-semibold">✍️ {post.author}</span>
+                        <span className="flex items-center gap-1 font-semibold">📅 {post.date}</span>
+                      </div>
+                      <h3 className="text-lg font-extrabold text-[#111111] leading-tight tracking-tight line-clamp-2 group-hover:text-[#FF6B00] transition-colors">
+                        {post.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 font-medium leading-relaxed line-clamp-4">
+                        {post.content}
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-50 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          alert(`${post.title}\n\n${post.content}`);
+                        }}
+                        className="text-[#FF6B00] hover:text-[#E55A00] text-xs font-black uppercase tracking-wider flex items-center gap-1 transition-all group-hover:translate-x-1 cursor-pointer"
+                      >
+                        {language === 'FR' ? "Lire la suite" : language === 'AR' ? "اقرأ المزيد" : "Read more"} →
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 6. CTA FINALE */}
       <section className="py-20 bg-[#111111] text-white relative">

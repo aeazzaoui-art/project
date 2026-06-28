@@ -575,6 +575,7 @@ export async function addBlogPostToFirestore(post: BlogPost): Promise<void> {
     await setDoc(doc(db, 'blogPosts', post.id), post);
   } catch (error) {
     console.error('Error adding blog post:', error);
+    throw error;
   }
 }
 
@@ -584,6 +585,7 @@ export async function updateBlogPostInFirestore(post: BlogPost): Promise<void> {
     await updateDoc(docRef, { ...post });
   } catch (error) {
     console.error('Error updating blog post:', error);
+    throw error;
   }
 }
 
@@ -592,6 +594,7 @@ export async function deleteBlogPostFromFirestore(postId: string): Promise<void>
     await deleteDoc(doc(db, 'blogPosts', postId));
   } catch (error) {
     console.error('Error deleting blog post:', error);
+    throw error;
   }
 }
 

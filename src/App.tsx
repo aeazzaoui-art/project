@@ -708,7 +708,7 @@ export default function App() {
       {/* 2. MAIN ACTIVE VIEW ROUTER */}
       <div className="flex-grow">
         {activePage === "home" && (
-          <Home language={language} setActivePage={setActivePage} />
+          <Home language={language} setActivePage={setActivePage} blogPosts={realtimeBlogPosts} />
         )}
 
         {activePage === "search" && (

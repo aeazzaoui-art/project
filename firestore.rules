@@ -8,7 +8,12 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == "aeazzaoui@gmail.com";
+      return isSignedIn() && (
+        request.auth.token.email == "aeazzaoui@gmail.com" ||
+        request.auth.token.email == "Aeazzaoui@gmail.com" ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == "aeazzaoui@gmail.com")
+      );
     }
 
     function isOwner(userId) {
@@ -87,6 +92,12 @@ service cloud.firestore {
         isAdmin()
       );
       allow delete: if isAdmin();
+    }
+
+    // Rules for Blog Posts
+    match /blogPosts/{postId} {
+      allow read: if true; // Anyone can read blog posts
+      allow write: if isAdmin(); // Only administrators can create, update, or delete blog posts
     }
   }
 }

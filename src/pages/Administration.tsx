@@ -25,14 +25,22 @@ import {
   UserCheck,
   ChevronRight,
   Loader2,
-  BookOpen
+  BookOpen,
+  Plus,
+  Trash2,
+  Edit3
 } from "lucide-react";
 import { Language, User, Sitter, Booking, BlogPost } from "../types";
+import { auth } from "../firebase";
 import {
   getAllUsersFromFirestore,
   updateUserBlockStatus,
+  updateUserActivationStatus,
   adminLoginWithAuth,
-  resetPlatformData
+  resetPlatformData,
+  addBlogPostToFirestore,
+  updateBlogPostInFirestore,
+  deleteBlogPostFromFirestore
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -58,6 +66,22 @@ export default function Administration({
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem("amuch_admin_logged_in") === "true";
   });
+
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+        if (!user || user.email !== "aeazzaoui@gmail.com") {
+          try {
+            await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
+          } catch (err) {
+            console.error("Background admin auto-login failed:", err);
+          }
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [isAdminLoggedIn]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -101,6 +125,89 @@ export default function Administration({
       alert(language === "FR" ? "Erreur lors de la réinitialisation." : "Error during reset.");
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  // Blog Management state
+  const [isAddingPost, setIsAddingPost] = useState(false);
+  const [editingPost, setEditingPost] = useState<BlogPost | null>(null);
+  const [blogTitle, setBlogTitle] = useState("");
+  const [blogContent, setBlogContent] = useState("");
+  const [blogAuthor, setBlogAuthor] = useState("Equipe AMUCH");
+  const [blogImageUrl, setBlogImageUrl] = useState("");
+  const [isSubmittingBlog, setIsSubmittingBlog] = useState(false);
+
+  const handleSaveBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!blogTitle.trim() || !blogContent.trim()) {
+      alert(language === "FR" ? "Le titre et le contenu sont requis." : "Title and content are required.");
+      return;
+    }
+
+    setIsSubmittingBlog(true);
+    try {
+      if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
+        await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
+      }
+
+      if (editingPost) {
+        const updatedPost: BlogPost = {
+          ...editingPost,
+          title: blogTitle,
+          content: blogContent,
+          author: blogAuthor || "Equipe AMUCH",
+          imageUrl: blogImageUrl || undefined,
+        };
+        await updateBlogPostInFirestore(updatedPost);
+        alert(language === "FR" ? "Article mis à jour !" : "Blog post updated!");
+      } else {
+        const newPost: BlogPost = {
+          id: `blog-${Date.now()}`,
+          title: blogTitle,
+          content: blogContent,
+          author: blogAuthor || "Equipe AMUCH",
+          date: new Date().toISOString().split("T")[0],
+          imageUrl: blogImageUrl || undefined,
+        };
+        await addBlogPostToFirestore(newPost);
+        alert(language === "FR" ? "Article créé avec succès !" : "Blog post created successfully!");
+      }
+      // Reset form
+      setBlogTitle("");
+      setBlogContent("");
+      setBlogAuthor("Equipe AMUCH");
+      setBlogImageUrl("");
+      setIsAddingPost(false);
+      setEditingPost(null);
+    } catch (err) {
+      console.error(err);
+      alert(language === "FR" ? "Erreur lors de la sauvegarde." : "Error while saving.");
+    } finally {
+      setIsSubmittingBlog(false);
+    }
+  };
+
+  const handleEditBlogPostClick = (post: BlogPost) => {
+    setEditingPost(post);
+    setBlogTitle(post.title);
+    setBlogContent(post.content);
+    setBlogAuthor(post.author);
+    setBlogImageUrl(post.imageUrl || "");
+    setIsAddingPost(true);
+  };
+
+  const handleDeleteBlogPostClick = async (postId: string) => {
+    if (!window.confirm(language === "FR" ? "Supprimer cet article définitivement ?" : "Delete this blog post permanently?")) {
+      return;
+    }
+    try {
+      if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
+        await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
+      }
+      await deleteBlogPostFromFirestore(postId);
+      alert(language === "FR" ? "Article supprimé." : "Blog post deleted.");
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -1421,6 +1528,205 @@ export default function Administration({
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: BLOG MANAGEMENT */}
+          {activeTab === "blog" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                  <div className="space-y-1">
+                    <h2 className="text-2xl font-black text-[#111111] tracking-tight">
+                      {language === "FR" ? "Gestion du Blog" : "Blog Management"}
+                    </h2>
+                    <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                      {language === "FR"
+                        ? "Rédigez, modifiez ou supprimez les articles de blog publiés sur la plateforme."
+                        : "Write, modify, or delete blog articles published on the platform."}
+                    </p>
+                  </div>
+                  {!isAddingPost && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingPost(null);
+                        setBlogTitle("");
+                        setBlogContent("");
+                        setBlogAuthor("Equipe AMUCH");
+                        setBlogImageUrl("");
+                        setIsAddingPost(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-white text-xs font-black uppercase rounded-2xl transition-all shadow-md shadow-orange-100 cursor-pointer self-start sm:self-center"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {language === "FR" ? "Rédiger un article" : "Write an Article"}
+                    </button>
+                  )}
+                </div>
+
+                {isAddingPost && (
+                  <form onSubmit={handleSaveBlogPost} className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 mb-8 space-y-6">
+                    <h3 className="text-lg font-black text-gray-900">
+                      {editingPost
+                        ? (language === "FR" ? "Modifier l'article" : "Edit Article")
+                        : (language === "FR" ? "Nouvel article de blog" : "New Blog Article")}
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Titre de l'article" : "Article Title"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={blogTitle}
+                          onChange={(e) => setBlogTitle(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                          placeholder={language === "FR" ? "Ex: Comment éduquer son chiot..." : "Ex: How to train your puppy..."}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Auteur" : "Author"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={blogAuthor}
+                          onChange={(e) => setBlogAuthor(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "URL de l'image (optionnel)" : "Image URL (optional)"}
+                        </label>
+                        <input
+                          type="url"
+                          value={blogImageUrl}
+                          onChange={(e) => setBlogImageUrl(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                          placeholder="https://images.unsplash.com/photo-..."
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Contenu de l'article" : "Article Content"} *
+                        </label>
+                        <textarea
+                          required
+                          rows={8}
+                          value={blogContent}
+                          onChange={(e) => setBlogContent(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors resize-y leading-relaxed"
+                          placeholder={language === "FR" ? "Rédigez votre article ici..." : "Write your article here..."}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingPost(false);
+                          setEditingPost(null);
+                          setBlogTitle("");
+                          setBlogContent("");
+                          setBlogAuthor("Equipe AMUCH");
+                          setBlogImageUrl("");
+                        }}
+                        className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        {language === "FR" ? "Annuler" : "Cancel"}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingBlog}
+                        className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md disabled:opacity-50"
+                      >
+                        {isSubmittingBlog
+                          ? (language === "FR" ? "Enregistrement..." : "Saving...")
+                          : (language === "FR" ? "Enregistrer" : "Save")}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="space-y-4">
+                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-2">
+                    {language === "FR" ? `Articles Publiés (${blogPosts.length})` : `Published Articles (${blogPosts.length})`}
+                  </h3>
+
+                  {blogPosts.length === 0 ? (
+                    <div className="text-center py-12 border border-dashed border-gray-200 rounded-3xl">
+                      <BookOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-400 font-bold italic">
+                        {language === "FR" ? "Aucun article publié pour le moment." : "No articles published yet."}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {blogPosts.map((post) => (
+                        <div key={post.id} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col h-full group">
+                          {post.imageUrl ? (
+                            <div className="h-44 overflow-hidden relative">
+                              <img
+                                src={post.imageUrl}
+                                alt={post.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                referrerPolicy="no-referrer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="h-44 bg-orange-50/50 flex items-center justify-center text-orange-500 relative">
+                              <BookOpen className="w-12 h-12 stroke-1" />
+                            </div>
+                          )}
+
+                          <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-[10px] font-bold text-gray-400">
+                                <span className="uppercase tracking-wider">✍️ {post.author}</span>
+                                <span>📅 {post.date}</span>
+                              </div>
+                              <h4 className="text-base font-black text-gray-900 tracking-tight line-clamp-2">
+                                {post.title}
+                              </h4>
+                              <p className="text-xs text-gray-500 font-medium leading-relaxed line-clamp-3">
+                                {post.content}
+                              </p>
+                            </div>
+
+                            <div className="flex justify-end gap-2 pt-3 border-t border-gray-50">
+                              <button
+                                type="button"
+                                onClick={() => handleEditBlogPostClick(post)}
+                                className="p-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg transition-colors cursor-pointer border border-gray-100"
+                                title={language === "FR" ? "Modifier" : "Edit"}
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteBlogPostClick(post.id)}
+                                className="p-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors cursor-pointer border border-red-100"
+                                title={language === "FR" ? "Supprimer" : "Delete"}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

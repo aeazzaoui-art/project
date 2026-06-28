@@ -97,7 +97,7 @@ export interface ChatConversation {
 
 export interface Review {
   id: string;
-  bookingId: string;
+  bookingId?: string;
   sitterId: string;
   authorName: string;
   authorCity: string;

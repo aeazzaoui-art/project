@@ -169,6 +169,7 @@ export function useFirestoreRealtime() {
       if (unsubscribeBookings) unsubscribeBookings();
       if (unsubscribeReviews) unsubscribeReviews();
       if (unsubscribeNotifications) unsubscribeNotifications();
+      if (unsubscribeBlogPosts) unsubscribeBlogPosts();
       if (unsubscribeAuth) unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
