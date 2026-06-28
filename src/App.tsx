@@ -787,7 +787,7 @@ export default function App() {
 
         {activePage === "sitter-dashboard" && (
           currentSitterUser ? (
-            currentSitterUser.isActive ? (
+            currentUser?.isActive ? (
               <SitterDashboard
                 language={language}
                 currentSitter={currentSitterUser}
