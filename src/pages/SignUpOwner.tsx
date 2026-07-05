@@ -152,7 +152,6 @@ export default function SignUpOwner({
         onSignUpComplete(newUser);
       }, 1500);
     } catch (err: any) {
-      console.error(err);
       if (err?.message === 'EMAIL_ALREADY_EXISTS' || err?.code === 'auth/email-already-in-use' || String(err?.message || '').includes('email-already-in-use')) {
         setError(
           language === 'FR'
@@ -207,7 +206,6 @@ export default function SignUpOwner({
         }, 1500);
       }
     } catch (err: any) {
-      console.error(err);
       setError(err?.message || "Login failed. Please check your email and password.");
       setLoading(false);
     }

@@ -283,7 +283,6 @@ export default function Administration({
         setIsAdminLoggedIn(true);
         sessionStorage.setItem("amuch_admin_logged_in", "true");
       } catch (err) {
-        console.error("Admin login failed", err);
         setLoginError(
           language === "FR"
             ? "Identifiants invalides. Veuillez réessayer."
