@@ -154,6 +154,14 @@ export async function signUpSitterWithAuth(email: string, password: string, sitt
 /**
  * Login specifically for admin
  */
+import { updatePassword } from 'firebase/auth';
+
+export async function updateAdminPassword(newPassword: string): Promise<void> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No user is logged in");
+  await updatePassword(user, newPassword);
+}
+
 export async function adminLoginWithAuth(email: string, password: string): Promise<void> {
   try {
     await signInWithEmailAndPassword(auth, email, password);

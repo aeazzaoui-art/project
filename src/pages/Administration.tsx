@@ -28,7 +28,8 @@ import {
   BookOpen,
   Plus,
   Trash2,
-  Edit3
+  Edit3,
+  Settings
 } from "lucide-react";
 import { Language, User, Sitter, Booking, BlogPost } from "../types";
 import { auth } from "../firebase";
@@ -41,7 +42,8 @@ import {
   resetPlatformData,
   addBlogPostToFirestore,
   updateBlogPostInFirestore,
-  deleteBlogPostFromFirestore
+  deleteBlogPostFromFirestore,
+  updateAdminPassword
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -70,13 +72,10 @@ export default function Administration({
 
   useEffect(() => {
     if (isAdminLoggedIn) {
-      const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
         if (!user || user.email !== "aeazzaoui@gmail.com") {
-          try {
-            await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
-          } catch (err) {
-            console.error("Background admin auto-login failed:", err);
-          }
+          setIsAdminLoggedIn(false);
+          sessionStorage.removeItem("amuch_admin_logged_in");
         }
       });
       return () => unsubscribe();
@@ -89,9 +88,44 @@ export default function Administration({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog" | "settings">(
     "dashboard",
   );
+
+  // Settings State
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [settingsMessage, setSettingsMessage] = useState({ type: "", text: "" });
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      setSettingsMessage({ type: "error", text: language === "FR" ? "Les mots de passe ne correspondent pas." : "Passwords do not match." });
+      return;
+    }
+    if (newPassword.length < 6) {
+      setSettingsMessage({ type: "error", text: language === "FR" ? "Le mot de passe doit contenir au moins 6 caractères." : "Password must be at least 6 characters long." });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    setSettingsMessage({ type: "", text: "" });
+    try {
+      await updateAdminPassword(newPassword);
+      setSettingsMessage({ type: "success", text: language === "FR" ? "Mot de passe mis à jour avec succès." : "Password updated successfully." });
+      setNewPassword("");
+      setConfirmNewPassword("");
+    } catch (err: any) {
+      console.error(err);
+      if (err.code === 'auth/requires-recent-login') {
+        setSettingsMessage({ type: "error", text: language === "FR" ? "Cette opération est sensible. Veuillez vous déconnecter et vous reconnecter avant de réessayer." : "This operation is sensitive. Please log out and log back in before trying again." });
+      } else {
+        setSettingsMessage({ type: "error", text: language === "FR" ? "Erreur lors de la mise à jour." : "Error updating password." });
+      }
+    }
+    setIsUpdatingPassword(false);
+  };
 
   // Date Range for Statistics
   const [startDateInput, setStartDateInput] = useState("2026-01-01");
@@ -148,7 +182,8 @@ export default function Administration({
     setIsSubmittingBlog(true);
     try {
       if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
-        await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
+        alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
+        return;
       }
 
       if (editingPost) {
@@ -203,7 +238,8 @@ export default function Administration({
     }
     try {
       if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
-        await adminLoginWithAuth("aeazzaoui@gmail.com", "Abdou9708");
+        alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
+        return;
       }
       await deleteBlogPostFromFirestore(postId);
       alert(language === "FR" ? "Article supprimé." : "Blog post deleted.");
@@ -241,8 +277,7 @@ export default function Administration({
     setLoginError("");
     setIsLoggingIn(true);
 
-    // Hardcoded requested credentials
-    if (email.trim() === "aeazzaoui@gmail.com" && password === "Abdou9708") {
+    if (email.trim() === "aeazzaoui@gmail.com") {
       try {
         await adminLoginWithAuth(email.trim(), password);
         setIsAdminLoggedIn(true);
@@ -251,19 +286,18 @@ export default function Administration({
         console.error("Admin login failed", err);
         setLoginError(
           language === "FR"
-            ? "Erreur de connexion Firebase. Vérifiez la console."
-            : "خطأ في تسجيل الدخول. تحقق من وحدة التحكم."
+            ? "Identifiants invalides. Veuillez réessayer."
+            : "البريد الإلكتروني أو كلمة المرor غير صحيحة."
         );
       }
-      setIsLoggingIn(false);
     } else {
       setLoginError(
         language === "FR"
           ? "Identifiants invalides. Veuillez réessayer."
-          : "البريد الإلكتروني أو كلمة المرor غير صحيحة.",
+          : "البريد الإلكتروني أو كلمة المرor غير صحيحة."
       );
-      setIsLoggingIn(false);
     }
+    setIsLoggingIn(false);
   };
 
   // Handle Logout
@@ -671,6 +705,18 @@ export default function Administration({
           >
             <BookOpen className="w-4 h-4" />
             Blog Management
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("settings")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "settings"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            <Settings className="w-4 h-4" />
+            Settings
           </button>
         </nav>
 
@@ -1734,6 +1780,70 @@ export default function Administration({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* SETTINGS VIEW */}
+          {activeTab === "settings" && (
+            <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-2xl mx-auto">
+              <div className="bg-white rounded-[2rem] border border-gray-100 p-8 shadow-sm space-y-8">
+                <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
+                  <div className="w-12 h-12 rounded-2xl bg-[#FF6B00]/10 flex items-center justify-center text-[#FF6B00]">
+                    <Settings className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                      {language === "FR" ? "Paramètres" : "Settings"}
+                    </h2>
+                    <p className="text-sm text-gray-500 font-medium">
+                      {language === "FR" ? "Modifiez vos identifiants administrateur" : "Update your admin credentials"}
+                    </p>
+                  </div>
+                </div>
+
+                {settingsMessage.text && (
+                  <div className={`p-4 rounded-xl text-xs font-bold ${settingsMessage.type === "success" ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"}`}>
+                    {settingsMessage.text}
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdatePassword} className="space-y-5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase">
+                      {language === "FR" ? "Nouveau mot de passe" : "New password"}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-gray-500 uppercase">
+                      {language === "FR" ? "Confirmer le mot de passe" : "Confirm password"}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#FF6B00] transition-colors"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isUpdatingPassword}
+                    className="w-full py-3 bg-[#111111] hover:bg-black text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {language === "FR" ? "Mettre à jour le mot de passe" : "Update Password"}
+                  </button>
+                </form>
               </div>
             </div>
           )}
