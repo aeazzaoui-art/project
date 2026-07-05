@@ -186,9 +186,29 @@ export async function adminLoginWithAuth(email: string, password: string): Promi
  * Login with Firebase Auth and fetch User profile from Firestore
  */
 export async function loginWithAuth(email: string, password: string): Promise<User> {
-  const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  const uid = userCredential.user.uid;
-  
+  let uid = '';
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    uid = userCredential.user.uid;
+  } catch (err: any) {
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      try {
+        // Fallback: If user doesn't exist in Firebase Auth (migrating from localStorage or old db),
+        // we try to create them on the fly so they don't get "invalid credentials"
+        const createCredential = await createUserWithEmailAndPassword(auth, email, password);
+        uid = createCredential.user.uid;
+      } catch (createErr: any) {
+        if (createErr.code === 'auth/email-already-in-use') {
+          // They typed the wrong password for an existing account
+          throw new Error('Mot de passe incorrect / Invalid password');
+        }
+        throw createErr;
+      }
+    } else {
+      throw err;
+    }
+  }
+
   // Try to get User document
   let user = await getUser(uid);
   if (!user) {

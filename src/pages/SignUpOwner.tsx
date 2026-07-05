@@ -178,7 +178,7 @@ export default function SignUpOwner({
     setError('');
 
     try {
-      const loggedUser = await loginWithAuth(loginEmail, loginPassword);
+      const loggedUser = await loginWithAuth(loginEmail.trim(), loginPassword);
       
       if (loggedUser.isBlocked) {
         throw new Error(
