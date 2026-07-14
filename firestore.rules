@@ -99,5 +99,11 @@ service cloud.firestore {
       allow read: if true; // Anyone can read blog posts
       allow write: if isAdmin(); // Only administrators can create, update, or delete blog posts
     }
+
+    // Rules for Directory
+    match /directory/{entryId} {
+      allow read: if true; // Publicly readable
+      allow write: if isAdmin(); // Only administrators can manage directory entries
+    }
   }
 }
