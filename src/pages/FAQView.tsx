@@ -22,13 +22,14 @@ export default function FAQView({ language, setActivePage }: FAQViewProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   // Category filter state
-  const [activeCategory, setActiveCategory] = useState<'all' | 'owner' | 'sitter' | 'security'>('all');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'owner' | 'sitter' | 'security' | 'services'>('all');
 
   const categories = [
     { id: 'all', label: language === 'FR' ? "Tout" : language === 'AR' ? "الكل" : "All", icon: HelpCircle },
     { id: 'owner', label: t.faq_cat_owners, icon: UserCheck },
-    { id: 'sitter', label: t.faq_cat_sitters, icon: ShieldCheck },
-    { id: 'security', label: t.faq_cat_security, icon: CreditCard }
+    { id: 'sitter', label: t.faq_cat_sitters, icon: HelpCircle },
+    { id: 'security', label: t.faq_cat_security, icon: CreditCard },
+    { id: 'services', label: language === 'FR' ? "Services" : language === 'AR' ? "الخدمات" : "Services", icon: HelpCircle }
   ];
 
   // Filter FAQs list

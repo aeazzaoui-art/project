@@ -131,7 +131,10 @@ export const SITTERS: Sitter[] = [
     availabilities: [
       '2026-06-23', '2026-06-24', '2026-06-27', '2026-06-28', '2026-06-29', '2026-06-30'
     ]
-  }
+  },
+
+
+
 ];
 
 export const REVIEWS: Review[] = [
@@ -209,7 +212,7 @@ export const TEAM: TeamMember[] = [
 export interface FAQItem {
   question: Record<string, string>;
   answer: Record<string, string>;
-  category: 'owner' | 'sitter' | 'security';
+  category: 'owner' | 'sitter' | 'security' | 'services';
 }
 
 export const FAQS: FAQItem[] = [
@@ -302,6 +305,32 @@ export const FAQS: FAQItem[] = [
       FR: "Oui, la protection de votre vie privée est une priorité absolue. Notre plateforme est développée conformément aux directives de la CNDP (Loi marocaine n° 09-08 relative à la protection des personnes physiques à l'égard du traitement des données à caractère personnel). Vos pièces d'identité et numéros de téléphone restent cryptés et confidentiels.",
       AR: "نعم، حماية خصوصيتكم هي أولويتنا القصوى. تم تطوير منصتنا وفقاً لتوجيهات اللجنة الوطنية لمراقبة حماية المعطيات ذات الطابع الشخصي (القانون المغربي رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي). تظل وثائق الهوية وأرقام الهواتف مشفرة وسرية تماماً.",
       EN: "Yes, protecting your privacy is an absolute priority. Our platform is developed in compliance with the CNDP guidelines (Moroccan Law No. 09-08 on the protection of individuals with regard to the processing of personal data). Your identity documents and phone numbers remain encrypted and confidential."
+    }
+  },
+  {
+    category: 'services',
+    question: {
+      FR: "Comment publier une annonce (adoption, perdu, trouvé) ?",
+      AR: "كيف يمكنني نشر إعلان (تبني، مفقود، تم العثور عليه)؟",
+      EN: "How to post an announcement (adoption, lost, found)?"
+    },
+    answer: {
+      FR: "Pour publier une annonce, vous devez être inscrit en tant que propriétaire d'animal. Une fois connecté, accédez à la rubrique Annonces et soumettez votre demande. Elle sera vérifiée par notre équipe avant d'être publique.",
+      AR: "لنشر إعلان، يجب أن تكون مسجلاً كمالك حيوان أليف. بمجرد تسجيل الدخول، انتقل إلى قسم الإعلانات وقدم طلبك. سيتم مراجعته من قبل فريقنا قبل أن يصبح عامًا.",
+      EN: "To post an announcement, you must be registered as a pet owner. Once logged in, go to the Announcements section and submit your request. It will be verified by our team before going public."
+    }
+  },
+  {
+    category: 'services',
+    question: {
+      FR: "Comment figurer dans l'Annuaire (Vétérinaires, Animaleries) ?",
+      AR: "كيف يمكنني الإدراج في الدليل (الأطباء البيطريون، متاجر الحيوانات الأليفة)؟",
+      EN: "How to be listed in the Directory (Vets, Pet Shops)?"
+    },
+    answer: {
+      FR: "L'inscription dans notre annuaire est un service payant réservé aux professionnels. Si vous êtes intéressé, veuillez nous contacter par email ou via notre numéro WhatsApp pour plus d'informations.",
+      AR: "التسجيل في دليلنا هو خدمة مدفوعة مخصصة للمحترفين. إذا كنت مهتمًا، يرجى الاتصال بنا عبر البريد الإلكتروني أو عبر رقم الواتساب الخاص بنا لمزيد من المعلومات.",
+      EN: "Listing in our directory is a paid service reserved for professionals. If you are interested, please contact us by email or via our WhatsApp number for more information."
     }
   }
 ];

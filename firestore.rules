@@ -11,6 +11,7 @@ service cloud.firestore {
       return isSignedIn() && (
         request.auth.token.email == "aeazzaoui@gmail.com" ||
         request.auth.token.email == "Aeazzaoui@gmail.com" ||
+        request.auth.token.email.lower() == "aeazzaoui@gmail.com" ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == "aeazzaoui@gmail.com")
       );
