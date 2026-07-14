@@ -105,5 +105,13 @@ service cloud.firestore {
       allow read: if true; // Publicly readable
       allow write: if isAdmin(); // Only administrators can manage directory entries
     }
+
+    // Rules for Announcements
+    match /announcements/{announcementId} {
+      allow read: if true; // Publicly readable (filtered on client)
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
   }
 }

@@ -29,10 +29,11 @@ import {
   Plus,
   Trash2,
   Edit3,
+  Megaphone,
   Settings,
   Store
 } from "lucide-react";
-import { Language, User, Sitter, Booking, BlogPost, DirectoryEntry } from "../types";
+import { Language, User, Sitter, Booking, BlogPost, DirectoryEntry, Announcement } from "../types";
 import { auth } from "../firebase";
 import { AmuchLogo } from "../components/AmuchLogo";
 import {
@@ -48,7 +49,9 @@ import {
   getDirectoryEntriesFromFirestore,
   addDirectoryEntryToFirestore,
   updateDirectoryEntryInFirestore,
-  deleteDirectoryEntryFromFirestore
+  deleteDirectoryEntryFromFirestore,
+  updateAnnouncementInFirestore,
+  deleteAnnouncementFromFirestore
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -58,6 +61,7 @@ interface AdministrationProps {
   bookings: Booking[];
   blogPosts: BlogPost[];
   directoryEntries: DirectoryEntry[];
+  announcements: Announcement[];
   onBackToHome: () => void;
 }
 
@@ -68,6 +72,7 @@ export default function Administration({
   bookings,
   blogPosts,
   directoryEntries,
+  announcements,
   onBackToHome,
 }: AdministrationProps) {
   const isRtl = language === "AR";
@@ -95,7 +100,7 @@ export default function Administration({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog" | "annuaire" | "settings">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog" | "annuaire" | "annonces" | "settings">(
     "dashboard",
   );
 
@@ -820,6 +825,20 @@ export default function Administration({
             <Store className="w-4 h-4" />
             Annuaire
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("annonces")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "annonces"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            <Megaphone className="w-4 h-4" />
+            Annonces
+          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab("settings")}
@@ -2093,6 +2112,98 @@ export default function Administration({
                           <p className="text-sm text-gray-500 line-clamp-3">
                             {entry.description || (language === "FR" ? "Pas de description" : "No description")}
                           </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+
+          {/* TAB 6: ANNONCES MANAGEMENT */}
+          {activeTab === "annonces" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
+                    {language === "FR" ? "Gestion des Annonces" : "Announcements Management"}
+                  </h2>
+                  <p className="text-sm text-gray-500 font-medium leading-relaxed mt-1">
+                    {language === "FR"
+                      ? "Validez ou supprimez les annonces proposées par les utilisateurs."
+                      : "Approve or delete announcements submitted by users."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {announcements.length === 0 ? (
+                    <div className="col-span-full py-12 text-center text-gray-400">
+                      <Megaphone className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p>{language === "FR" ? "Aucune annonce." : "No announcements."}</p>
+                    </div>
+                  ) : (
+                    announcements.map((ann) => (
+                      <div
+                        key={ann.id}
+                        className="flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm"
+                      >
+                        <div className="p-5 flex-1">
+                          <div className="flex justify-between items-start mb-3">
+                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${
+                              ann.type === 'adoption' ? 'bg-green-50 text-green-700' :
+                              ann.type === 'lost' ? 'bg-red-50 text-red-700' :
+                              ann.type === 'found' ? 'bg-blue-50 text-blue-700' :
+                              'bg-purple-50 text-purple-700'
+                            }`}>
+                              {ann.type}
+                            </span>
+                            <span className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded-full ${
+                              ann.status === 'approved' ? 'bg-emerald-50 text-emerald-600' :
+                              'bg-orange-50 text-orange-600'
+                            }`}>
+                              {ann.status}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-bold text-gray-900 mb-2">
+                            {ann.title}
+                          </h4>
+                          <p className="text-sm text-gray-600 line-clamp-3 mb-4">
+                            {ann.description}
+                          </p>
+                          <div className="text-xs text-gray-500 mb-1">
+                            <span className="font-semibold">{language === "FR" ? "Ville:" : "City:"}</span> {ann.city}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            <span className="font-semibold">{language === "FR" ? "Par:" : "By:"}</span> {ann.userName || 'Unknown'}
+                          </div>
+                        </div>
+                        <div className="bg-gray-50 p-3 flex justify-end gap-2 border-t border-gray-100">
+                          {ann.status === 'pending' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateAnnouncementInFirestore({ ...ann, status: 'approved' });
+                                } catch (e) { console.error(e); }
+                              }}
+                              className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                            >
+                              {language === "FR" ? "Accepter" : "Approve"}
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              if(window.confirm('Sur ?')) {
+                                try {
+                                  await deleteAnnouncementFromFirestore(ann.id);
+                                } catch (e) { console.error(e); }
+                              }
+                            }}
+                            className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            {language === "FR" ? "Supprimer" : "Delete"}
+                          </button>
                         </div>
                       </div>
                     ))

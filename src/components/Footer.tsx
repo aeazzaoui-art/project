@@ -96,6 +96,14 @@ export default function Footer({ language, setLanguage, setActivePage }: FooterP
                   {language === 'FR' ? "Tarifs" : language === 'AR' ? "الأسعار" : "Pricing"}
                 </button>
               </li>
+              <li>
+                <button 
+                  onClick={() => { setActivePage('annonces'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                  className="hover:text-[#FF6B00] transition-colors text-left cursor-pointer font-bold"
+                >
+                  {language === 'FR' ? "Annonces" : language === 'AR' ? "الإعلانات" : "Classifieds"}
+                </button>
+              </li>
             </ul>
           </div>
 

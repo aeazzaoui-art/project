@@ -22,7 +22,7 @@ import {
   signOut 
 } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { User, Sitter, Booking, Message, Review, AppNotification, BlogPost, DirectoryEntry } from '../types';
+import { User, Sitter, Booking, Message, Review, AppNotification, BlogPost, DirectoryEntry, Announcement } from '../types';
 import { SITTERS, REVIEWS } from '../data';
 
 export enum OperationType {
@@ -675,6 +675,35 @@ export async function deleteDirectoryEntryFromFirestore(entryId: string): Promis
     await deleteDoc(doc(db, 'directory', entryId));
   } catch (error) {
     console.error('Error deleting directory entry:', error);
+    throw error;
+  }
+}
+
+// Announcements Functions
+export async function addAnnouncementToFirestore(announcement: Announcement): Promise<void> {
+  try {
+    await setDoc(doc(db, 'announcements', announcement.id), announcement);
+  } catch (error) {
+    console.error('Error adding announcement:', error);
+    throw error;
+  }
+}
+
+export async function updateAnnouncementInFirestore(announcement: Announcement): Promise<void> {
+  try {
+    const docRef = doc(db, 'announcements', announcement.id);
+    await updateDoc(docRef, { ...announcement });
+  } catch (error) {
+    console.error('Error updating announcement:', error);
+    throw error;
+  }
+}
+
+export async function deleteAnnouncementFromFirestore(announcementId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'announcements', announcementId));
+  } catch (error) {
+    console.error('Error deleting announcement:', error);
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { User, Sitter, Booking, Review, AppNotification, BlogPost, DirectoryEntry } from "../types";
+import { User, Sitter, Booking, Review, AppNotification, BlogPost, DirectoryEntry, Announcement } from "../types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function useFirestoreRealtime() {
@@ -12,6 +12,7 @@ export function useFirestoreRealtime() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
   const [directoryEntries, setDirectoryEntries] = useState<DirectoryEntry[]>([]);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
 
   // For current auth state sync
@@ -170,6 +171,13 @@ export function useFirestoreRealtime() {
         setDirectoryEntries(directoryList);
       });
 
+      let unsubscribeAnnouncements = onSnapshot(collection(db, "announcements"), (snapshot) => {
+        const annList: Announcement[] = [];
+        snapshot.forEach((doc) => annList.push(doc.data() as Announcement));
+        annList.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+        setAnnouncements(annList);
+      });
+
     });
 
     return () => {
@@ -182,6 +190,9 @@ export function useFirestoreRealtime() {
       // eslint-disable-next-line
       // @ts-ignore
       if (typeof unsubscribeDirectory !== 'undefined' && unsubscribeDirectory) unsubscribeDirectory();
+      // eslint-disable-next-line
+      // @ts-ignore
+      if (typeof unsubscribeAnnouncements !== 'undefined' && unsubscribeAnnouncements) unsubscribeAnnouncements();
       if (unsubscribeAuth) unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
@@ -196,6 +207,7 @@ export function useFirestoreRealtime() {
     notifications,
     blogPosts,
     directoryEntries,
+    announcements,
     currentUser,
     currentSitterUser,
     loading,

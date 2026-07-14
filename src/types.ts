@@ -18,6 +18,7 @@ export type ActivePage =
   | 'faq'
   | 'blog'
   | 'annuaire'
+  | 'annonces'
   | 'privacy'
   | 'terms'
   | 'administration';
@@ -140,4 +141,20 @@ export interface DirectoryEntry {
   description: string;
   dateAdded: string;
 }
+
+export interface Announcement {
+  id: string;
+  userId: string;
+  userName?: string;
+  type: 'adoption' | 'lost' | 'found' | 'wanted';
+  petType?: string;
+  title: string;
+  description: string;
+  city: string;
+  contactPhone?: string;
+  photoUrl?: string;
+  status: 'pending' | 'approved';
+  dateAdded: string;
+}
+
 
