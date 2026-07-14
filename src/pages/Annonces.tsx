@@ -22,6 +22,7 @@ export default function Annonces({ language, announcements, currentUser, onPostC
   const [annDesc, setAnnDesc] = useState('');
   const [annCity, setAnnCity] = useState('');
   const [annPhone, setAnnPhone] = useState('');
+  const [annPhotoUrl, setAnnPhotoUrl] = useState('');
   const [annPetType, setAnnPetType] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -65,6 +66,7 @@ export default function Annonces({ language, announcements, currentUser, onPostC
       setAnnDesc('');
       setAnnCity('');
       setAnnPhone('');
+      setAnnPhotoUrl('');
       setAnnPetType('');
     } catch (err) {
       console.error(err);
@@ -174,6 +176,45 @@ export default function Annonces({ language, announcements, currentUser, onPostC
                     className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-[#FF6B00] outline-none font-medium"
                   />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                    {language === 'FR' ? "Photo (optionnel)" : "Photo (optional)"}
+                  </label>
+                  <label className="border-2 border-dashed border-gray-300 hover:border-[#FF6B00] rounded-2xl p-6 text-center cursor-pointer bg-gray-50 hover:bg-[#FF6B00]/5 transition-all block relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === 'string') {
+                              setAnnPhotoUrl(reader.result);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                    {annPhotoUrl ? (
+                      <div className="relative h-40 w-full overflow-hidden rounded-xl">
+                        <img src={annPhotoUrl} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="py-4 space-y-2">
+                        <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto shadow-sm">
+                          <Plus className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <span className="text-xs text-gray-500 font-semibold block">
+                          {language === 'FR' ? "Cliquez pour téléverser une image" : "Click to upload an image"}
+                        </span>
+                      </div>
+                    )}
+                  </label>
+                </div>
+
                 
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
@@ -280,6 +321,12 @@ export default function Annonces({ language, announcements, currentUser, onPostC
                     </span>
                   </div>
 
+                  {ann.photoUrl && (
+                    <div className="w-full h-48 rounded-2xl overflow-hidden mb-4">
+                      <img src={ann.photoUrl} alt={ann.title} className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                  
                   <h3 className="text-xl font-bold text-gray-900 mb-3 tracking-tight">
                     {ann.title}
                   </h3>
