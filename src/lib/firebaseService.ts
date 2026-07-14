@@ -22,7 +22,7 @@ import {
   signOut 
 } from 'firebase/auth';
 import { db, auth } from '../firebase';
-import { User, Sitter, Booking, Message, Review, AppNotification, BlogPost } from '../types';
+import { User, Sitter, Booking, Message, Review, AppNotification, BlogPost, DirectoryEntry } from '../types';
 import { SITTERS, REVIEWS } from '../data';
 
 export enum OperationType {
@@ -631,6 +631,50 @@ export async function deleteBlogPostFromFirestore(postId: string): Promise<void>
     await deleteDoc(doc(db, 'blogPosts', postId));
   } catch (error) {
     console.error('Error deleting blog post:', error);
+    throw error;
+  }
+}
+
+// Directory Functions
+export async function getDirectoryEntriesFromFirestore(): Promise<DirectoryEntry[]> {
+  try {
+    const colRef = collection(db, 'directory');
+    const snapshot = await getDocs(colRef);
+    const list: DirectoryEntry[] = [];
+    snapshot.forEach((doc) => {
+      list.push(doc.data() as DirectoryEntry);
+    });
+    return list.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+  } catch (error) {
+    console.error('Error fetching directory entries:', error);
+    return [];
+  }
+}
+
+export async function addDirectoryEntryToFirestore(entry: DirectoryEntry): Promise<void> {
+  try {
+    await setDoc(doc(db, 'directory', entry.id), entry);
+  } catch (error) {
+    console.error('Error adding directory entry:', error);
+    throw error;
+  }
+}
+
+export async function updateDirectoryEntryInFirestore(entry: DirectoryEntry): Promise<void> {
+  try {
+    const docRef = doc(db, 'directory', entry.id);
+    await updateDoc(docRef, { ...entry });
+  } catch (error) {
+    console.error('Error updating directory entry:', error);
+    throw error;
+  }
+}
+
+export async function deleteDirectoryEntryFromFirestore(entryId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, 'directory', entryId));
+  } catch (error) {
+    console.error('Error deleting directory entry:', error);
     throw error;
   }
 }

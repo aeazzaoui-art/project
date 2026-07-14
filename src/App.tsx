@@ -55,6 +55,7 @@ import Blog from "./pages/Blog";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Administration from "./pages/Administration";
+import Annuaire from "./pages/Annuaire";
 
 import { useFirestoreRealtime } from "./lib/useFirestoreRealtime";
 import { Loader2 } from "lucide-react";
@@ -68,6 +69,7 @@ export default function App() {
     reviews: realtimeReviews,
     notifications: realtimeNotifications,
     blogPosts: realtimeBlogPosts,
+    directoryEntries: realtimeDirectoryEntries,
     currentUser: realtimeCurrentUser,
     currentSitterUser: realtimeCurrentSitterUser,
     loading: realtimeLoading,
@@ -743,6 +745,7 @@ export default function App() {
         sitters={sitters}
         bookings={bookings}
         blogPosts={realtimeBlogPosts}
+        directoryEntries={realtimeDirectoryEntries}
         onBackToHome={() => setActivePage("home")}
       />
     );
@@ -942,6 +945,13 @@ export default function App() {
             blogPosts={realtimeBlogPosts}
             selectedPost={selectedBlogPost}
             setSelectedPost={setSelectedBlogPost}
+          />
+        )}
+
+        {activePage === "annuaire" && (
+          <Annuaire
+            language={language}
+            directoryEntries={realtimeDirectoryEntries}
           />
         )}
 

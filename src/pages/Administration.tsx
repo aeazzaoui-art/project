@@ -29,9 +29,10 @@ import {
   Plus,
   Trash2,
   Edit3,
-  Settings
+  Settings,
+  Store
 } from "lucide-react";
-import { Language, User, Sitter, Booking, BlogPost } from "../types";
+import { Language, User, Sitter, Booking, BlogPost, DirectoryEntry } from "../types";
 import { auth } from "../firebase";
 import { AmuchLogo } from "../components/AmuchLogo";
 import {
@@ -43,7 +44,11 @@ import {
   addBlogPostToFirestore,
   updateBlogPostInFirestore,
   deleteBlogPostFromFirestore,
-  updateAdminPassword
+  updateAdminPassword,
+  getDirectoryEntriesFromFirestore,
+  addDirectoryEntryToFirestore,
+  updateDirectoryEntryInFirestore,
+  deleteDirectoryEntryFromFirestore
 } from "../lib/firebaseService";
 
 interface AdministrationProps {
@@ -52,6 +57,7 @@ interface AdministrationProps {
   sitters: Sitter[];
   bookings: Booking[];
   blogPosts: BlogPost[];
+  directoryEntries: DirectoryEntry[];
   onBackToHome: () => void;
 }
 
@@ -61,6 +67,7 @@ export default function Administration({
   sitters,
   bookings,
   blogPosts,
+  directoryEntries,
   onBackToHome,
 }: AdministrationProps) {
   const isRtl = language === "AR";
@@ -88,7 +95,7 @@ export default function Administration({
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   // Active Tab
-  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog" | "settings">(
+  const [activeTab, setActiveTab] = useState<"dashboard" | "users" | "maintenance" | "blog" | "annuaire" | "settings">(
     "dashboard",
   );
 
@@ -243,6 +250,102 @@ export default function Administration({
       }
       await deleteBlogPostFromFirestore(postId);
       alert(language === "FR" ? "Article supprimé." : "Blog post deleted.");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Directory Management state
+  const [isAddingDirectory, setIsAddingDirectory] = useState(false);
+  const [editingDirectory, setEditingDirectory] = useState<DirectoryEntry | null>(null);
+  const [dirType, setDirType] = useState<'veterinaire' | 'animalerie'>('veterinaire');
+  const [dirName, setDirName] = useState("");
+  const [dirAddress, setDirAddress] = useState("");
+  const [dirCity, setDirCity] = useState("");
+  const [dirPhone, setDirPhone] = useState("");
+  const [dirDescription, setDirDescription] = useState("");
+  const [isSubmittingDir, setIsSubmittingDir] = useState(false);
+
+  const handleSaveDirectoryEntry = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dirName.trim() || !dirCity.trim()) {
+      alert(language === "FR" ? "Le nom et la ville sont requis." : "Name and city are required.");
+      return;
+    }
+
+    setIsSubmittingDir(true);
+    try {
+      if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
+        alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
+        return;
+      }
+
+      if (editingDirectory) {
+        const updatedEntry: DirectoryEntry = {
+          ...editingDirectory,
+          type: dirType,
+          name: dirName,
+          address: dirAddress,
+          city: dirCity,
+          phone: dirPhone,
+          description: dirDescription,
+        };
+        await updateDirectoryEntryInFirestore(updatedEntry);
+        alert(language === "FR" ? "Entrée mise à jour !" : "Directory entry updated!");
+      } else {
+        const newEntry: DirectoryEntry = {
+          id: `dir-${Date.now()}`,
+          type: dirType,
+          name: dirName,
+          address: dirAddress,
+          city: dirCity,
+          phone: dirPhone,
+          description: dirDescription,
+          dateAdded: new Date().toISOString(),
+        };
+        await addDirectoryEntryToFirestore(newEntry);
+        alert(language === "FR" ? "Entrée créée avec succès !" : "Directory entry created successfully!");
+      }
+      
+      // Reset form
+      setDirType('veterinaire');
+      setDirName("");
+      setDirAddress("");
+      setDirCity("");
+      setDirPhone("");
+      setDirDescription("");
+      setIsAddingDirectory(false);
+      setEditingDirectory(null);
+    } catch (err) {
+      console.error(err);
+      alert(language === "FR" ? "Erreur lors de la sauvegarde." : "Error while saving.");
+    } finally {
+      setIsSubmittingDir(false);
+    }
+  };
+
+  const handleEditDirectoryClick = (entry: DirectoryEntry) => {
+    setEditingDirectory(entry);
+    setDirType(entry.type);
+    setDirName(entry.name);
+    setDirAddress(entry.address);
+    setDirCity(entry.city);
+    setDirPhone(entry.phone);
+    setDirDescription(entry.description);
+    setIsAddingDirectory(true);
+  };
+
+  const handleDeleteDirectoryClick = async (entryId: string) => {
+    if (!window.confirm(language === "FR" ? "Supprimer cette entrée définitivement ?" : "Delete this entry permanently?")) {
+      return;
+    }
+    try {
+      if (!auth.currentUser || auth.currentUser.email !== "aeazzaoui@gmail.com") {
+        alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
+        return;
+      }
+      await deleteDirectoryEntryFromFirestore(entryId);
+      alert(language === "FR" ? "Entrée supprimée." : "Entry deleted.");
     } catch (err) {
       console.error(err);
     }
@@ -587,7 +690,7 @@ export default function Administration({
                 <button
                   type="submit"
                   disabled={isLoggingIn}
-                  className="w-full py-3.5 bg-[#FF6B00] text-white font-extrabold rounded-xl hover:bg-[#E55A00] transition-all disabled:bg-gray-400 text-xs tracking-wider uppercase shadow-md flex justify-center items-center gap-1.5 cursor-pointer"
+                  className="w-full py-3.5 bg-[#FF6B00] text-white font-bold rounded-xl hover:bg-[#E55A00] transition-all disabled:bg-gray-400 text-xs tracking-wider uppercase shadow-md flex justify-center items-center gap-1.5 cursor-pointer"
                 >
                   {isLoggingIn ? (
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
@@ -707,6 +810,18 @@ export default function Administration({
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab("annuaire")}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
+              activeTab === "annuaire"
+                ? "bg-[#FF6B00]/10 text-[#FF6B00]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            Annuaire
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab("settings")}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium transition-all cursor-pointer ${
               activeTab === "settings"
@@ -731,7 +846,7 @@ export default function Administration({
           <button
             type="button"
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-extrabold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             Déconnexion
@@ -791,7 +906,7 @@ export default function Administration({
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Début</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Début</label>
                     <input 
                       type="date" 
                       value={startDateInput}
@@ -800,7 +915,7 @@ export default function Administration({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Fin</label>
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Fin</label>
                     <input 
                       type="date" 
                       value={endDateInput}
@@ -810,7 +925,7 @@ export default function Administration({
                   </div>
                   <button
                     onClick={handleApplyFilter}
-                    className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E55A00] text-white text-xs font-extrabold rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 h-[38px]"
+                    className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E55A00] text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer transition-all flex items-center justify-center gap-1.5 h-[38px]"
                   >
                     <span>Filtrer</span>
                   </button>
@@ -822,7 +937,7 @@ export default function Administration({
                 {/* Metric 1: Total Users */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Utilisateurs
                     </span>
                     <span className="p-2 rounded-xl bg-blue-50 text-blue-500 group-hover:scale-110 transition-transform">
@@ -830,7 +945,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-bold text-gray-900">
                       {users.length}
                     </span>
                     <p className="text-[10px] text-gray-400 font-semibold mt-1">
@@ -842,7 +957,7 @@ export default function Administration({
                 {/* Metric 2: Owners */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Propriétaires
                     </span>
                     <span className="p-2 rounded-xl bg-orange-50 text-orange-500 group-hover:scale-110 transition-transform">
@@ -850,7 +965,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-bold text-gray-900">
                       {ownersCount}
                     </span>
                     <p className="text-[10px] text-gray-400 font-semibold mt-1">
@@ -862,7 +977,7 @@ export default function Administration({
                 {/* Metric 3: Sitters */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Sitter Pro
                     </span>
                     <span className="p-2 rounded-xl bg-purple-50 text-purple-500 group-hover:scale-110 transition-transform">
@@ -870,7 +985,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-bold text-gray-900">
                       {sittersCount}
                     </span>
                     <p className="text-[10px] text-gray-400 font-semibold mt-1">
@@ -882,7 +997,7 @@ export default function Administration({
                 {/* Metric 4: Reservations */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Réservations
                     </span>
                     <span className="p-2 rounded-xl bg-emerald-50 text-emerald-500 group-hover:scale-110 transition-transform">
@@ -890,7 +1005,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-bold text-gray-900">
                       {totalReservations}
                     </span>
                     <p className="text-[10px] text-gray-400 font-semibold mt-1">
@@ -902,7 +1017,7 @@ export default function Administration({
                 {/* Metric 5: Cancelled */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Cancelled
                     </span>
                     <span className="p-2 rounded-xl bg-red-50 text-red-500 group-hover:scale-110 transition-transform">
@@ -910,7 +1025,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-gray-900">
+                    <span className="text-3xl font-bold text-gray-900">
                       {totalCancelled}
                     </span>
                     <p className="text-[10px] text-gray-400 font-semibold mt-1">
@@ -922,7 +1037,7 @@ export default function Administration({
                 {/* Metric 6: Gross Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Chiffre d'affaires (Brut)
                     </span>
                     <span className="p-2 rounded-xl bg-[#FF6B00]/10 text-[#FF6B00] group-hover:scale-110 transition-transform">
@@ -930,7 +1045,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-[#FF6B00]">
+                    <span className="text-3xl font-bold text-[#FF6B00]">
                       {totalRevenue} MAD
                     </span>
                   </div>
@@ -939,7 +1054,7 @@ export default function Administration({
                 {/* Metric 7: Admin Revenue */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-xs flex flex-col justify-between hover:shadow-md hover:border-gray-200 transition-all group">
                   <div className="flex justify-between items-start">
-                    <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">
+                    <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase">
                       Total Revenue
                     </span>
                     <span className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:scale-110 transition-transform">
@@ -947,7 +1062,7 @@ export default function Administration({
                     </span>
                   </div>
                   <div className="mt-4">
-                    <span className="text-3xl font-black text-emerald-600">
+                    <span className="text-3xl font-bold text-emerald-600">
                       {adminRevenue} MAD
                     </span>
                     <p className="text-[10px] text-gray-400 font-bold mt-1">
@@ -963,14 +1078,14 @@ export default function Administration({
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm col-span-2 space-y-4">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                     <div>
-                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                      <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                         Évolution des Réservations
                       </h3>
                       <p className="text-[10px] text-gray-400 font-medium">
                         Nombre de demandes mensuelles d'animaux de compagnie
                       </p>
                     </div>
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B00]/5 text-[#FF6B00] text-[10px] font-extrabold">
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FF6B00]/5 text-[#FF6B00] text-[10px] font-bold">
                       <TrendingUp className="w-3.5 h-3.5" />
                       +24% Croissance
                     </span>
@@ -1049,7 +1164,7 @@ export default function Administration({
                               style={{ width: `${100 / monthlyTrend.length}%` }}
                             >
                               <div
-                                className="absolute bg-[#111111] text-white text-[9px] font-black px-2 py-1 rounded-md opacity-0 group-hover/item:opacity-100 bottom-full mb-1 transition-opacity z-25 pointer-events-none whitespace-nowrap shadow-md"
+                                className="absolute bg-[#111111] text-white text-[9px] font-bold px-2 py-1 rounded-md opacity-0 group-hover/item:opacity-100 bottom-full mb-1 transition-opacity z-25 pointer-events-none whitespace-nowrap shadow-md"
                                 style={{ bottom: `${100 - topPercent + 4}%` }}
                               >
                                 {d.count} rés.
@@ -1067,7 +1182,7 @@ export default function Administration({
                     </div>
 
                     {/* X Axis Labels */}
-                    <div className="flex justify-between border-t border-gray-100 pt-2 text-[10px] text-gray-400 font-extrabold">
+                    <div className="flex justify-between border-t border-gray-100 pt-2 text-[10px] text-gray-400 font-bold">
                       {monthlyTrend.map((d) => (
                         <span key={d.month} className="text-center flex-1">
                           {d.month}
@@ -1080,7 +1195,7 @@ export default function Administration({
                 {/* Chart 2: Pet Type distribution Donut */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm flex flex-col justify-between space-y-4">
                   <div className="pb-2 border-b border-gray-50">
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                       Répartition par Animaux
                     </h3>
                     <p className="text-[10px] text-gray-400 font-medium">
@@ -1102,7 +1217,7 @@ export default function Administration({
                         <span className="text-xs text-gray-400 font-bold block uppercase tracking-wide">
                           Majorité
                         </span>
-                        <span className="text-xl font-black text-gray-800">
+                        <span className="text-xl font-bold text-gray-800">
                           {petDistribution.cats}% Chats
                         </span>
                       </div>
@@ -1141,7 +1256,7 @@ export default function Administration({
                 {/* Cities Performance Indicator Bars */}
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                   <div className="pb-2 border-b border-gray-50">
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                       Performance par Ville
                     </h3>
                     <p className="text-[10px] text-gray-400 font-medium">
@@ -1160,7 +1275,7 @@ export default function Administration({
                       );
                       return (
                         <div key={city.name} className="space-y-1.5">
-                          <div className="flex justify-between items-baseline text-xs font-extrabold">
+                          <div className="flex justify-between items-baseline text-xs font-bold">
                             <span className="text-gray-700 flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5 text-[#FF6B00]" />
                               {city.name}
@@ -1189,7 +1304,7 @@ export default function Administration({
                 <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm lg:col-span-2 space-y-4">
                   <div className="flex justify-between items-center pb-2 border-b border-gray-50">
                     <div>
-                      <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                      <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                         Demandes de Gardes Récentes
                       </h3>
                       <p className="text-[10px] text-gray-400 font-medium">
@@ -1203,7 +1318,7 @@ export default function Administration({
                           "Fonctionnalité d'exportation de logs en cours de développement.",
                         )
                       }
-                      className="text-[#FF6B00] text-[10px] font-extrabold hover:underline"
+                      className="text-[#FF6B00] text-[10px] font-bold hover:underline"
                     >
                       Exporter XLSX
                     </button>
@@ -1212,7 +1327,7 @@ export default function Administration({
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="border-b border-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                        <tr className="border-b border-gray-50 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                           <th className="py-2.5">Propriétaire</th>
                           <th className="py-2.5">Sitter</th>
                           <th className="py-2.5">Dates / Ville</th>
@@ -1227,7 +1342,7 @@ export default function Administration({
                             className="hover:bg-gray-50/50 transition-colors"
                           >
                             <td className="py-3">
-                              <span className="font-extrabold text-gray-900 block">
+                              <span className="font-bold text-gray-900 block">
                                 {b.ownerName}
                               </span>
                               <span className="text-[10px] text-gray-400 block">
@@ -1239,7 +1354,7 @@ export default function Administration({
                                 </span>
                               )}
                             </td>
-                            <td className="py-3 text-gray-900 font-extrabold">
+                            <td className="py-3 text-gray-900 font-bold">
                               {b.sitterName}
                             </td>
                             <td className="py-3">
@@ -1252,7 +1367,7 @@ export default function Administration({
                             </td>
                             <td className="py-3 text-center">
                               <span
-                                className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase ${
+                                className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase ${
                                   b.status === "confirmed"
                                     ? "bg-green-100 text-green-700"
                                     : b.status === "cancelled"
@@ -1265,7 +1380,7 @@ export default function Administration({
                                 {b.status}
                               </span>
                             </td>
-                            <td className="py-3 text-right font-black text-gray-900">
+                            <td className="py-3 text-right font-bold text-gray-900">
                               {b.totalPrice} MAD
                             </td>
                           </tr>
@@ -1285,7 +1400,7 @@ export default function Administration({
               <div className="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm space-y-4">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-wider">
+                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-wider">
                       Filtrer & Rechercher
                     </h3>
                     <p className="text-[10px] text-gray-400 font-semibold">
@@ -1296,7 +1411,7 @@ export default function Administration({
 
                   {/* Total indicator */}
                   <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 text-xs font-bold px-3 py-1 rounded-full">
-                    <span className="font-extrabold">
+                    <span className="font-bold">
                       {filteredUsers.length}
                     </span>{" "}
                     correspondants
@@ -1360,7 +1475,7 @@ export default function Administration({
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs border-collapse">
                       <thead>
-                        <tr className="bg-gray-50/50 border-b border-gray-100 text-[10px] font-black text-gray-400 uppercase tracking-wider">
+                        <tr className="bg-gray-50/50 border-b border-gray-100 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                           <th className="py-4 px-6">Utilisateur (User)</th>
                           <th className="py-4 px-6">Adresse Email</th>
                           <th className="py-4 px-6">Rôle</th>
@@ -1384,7 +1499,7 @@ export default function Administration({
                             <td className="py-4 px-6">
                               <div className="flex items-center gap-3">
                                 <div
-                                  className={`w-9 h-9 rounded-full font-extrabold flex items-center justify-center text-xs shadow-sm ${
+                                  className={`w-9 h-9 rounded-full font-bold flex items-center justify-center text-xs shadow-sm ${
                                     user.role === "sitter"
                                       ? "bg-purple-100 text-purple-700"
                                       : "bg-orange-100 text-orange-700"
@@ -1394,7 +1509,7 @@ export default function Administration({
                                   {user.lastName.charAt(0)}
                                 </div>
                                 <div>
-                                  <span className="font-black text-gray-900 block text-xs">
+                                  <span className="font-bold text-gray-900 block text-xs">
                                     {user.firstName} {user.lastName}
                                   </span>
                                   <span className="text-[9px] text-gray-400 font-bold block uppercase">
@@ -1417,7 +1532,7 @@ export default function Administration({
                             {/* Role Badge */}
                             <td className="py-4 px-6">
                               <span
-                                className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-black uppercase ${
+                                className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-bold uppercase ${
                                   user.role === "sitter"
                                     ? "bg-purple-100 text-purple-700 border border-purple-200"
                                     : "bg-orange-100 text-[#FF6B00] border border-orange-200"
@@ -1453,7 +1568,7 @@ export default function Administration({
                             <td className="py-4 px-6 text-center">
                               {user.role === 'sitter' ? (
                                 user.isActive ? (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-black uppercase cursor-pointer"
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[10px] font-bold uppercase cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       updateUserActivationStatus(user.id, false);
@@ -1463,7 +1578,7 @@ export default function Administration({
                                     Activé (Active)
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 text-[10px] font-black uppercase cursor-pointer"
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-700 text-[10px] font-bold uppercase cursor-pointer"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       updateUserActivationStatus(user.id, true);
@@ -1494,7 +1609,7 @@ export default function Administration({
                                       action: "unblock",
                                     })
                                   }
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-[10px] font-extrabold rounded-lg transition-colors cursor-pointer shadow-xs"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200 text-[10px] font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
                                 >
                                   <UserCheck className="w-3.5 h-3.5" />
                                   Débloquer
@@ -1510,7 +1625,7 @@ export default function Administration({
                                       action: "block",
                                     })
                                   }
-                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-[10px] font-extrabold rounded-lg transition-colors cursor-pointer shadow-xs"
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-[10px] font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
                                 >
                                   <UserX className="w-3.5 h-3.5" />
                                   Bloquer l'accès
@@ -1536,7 +1651,7 @@ export default function Administration({
                     <div className="w-12 h-12 rounded-2xl bg-[#FF6B00]/10 text-[#FF6B00] flex items-center justify-center mb-4">
                       <ShieldAlert className="w-6 h-6" />
                     </div>
-                    <h2 className="text-2xl font-black text-[#111111] tracking-tight">
+                    <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
                       Maintenance du Système
                     </h2>
                     <p className="text-sm text-gray-500 font-medium leading-relaxed">
@@ -1551,7 +1666,7 @@ export default function Administration({
                         <AlertTriangle className="w-6 h-6" />
                       </div>
                       <div>
-                        <h4 className="font-black text-lg text-red-700">Réinitialisation d'Usine</h4>
+                        <h4 className="font-bold text-lg text-red-700">Réinitialisation d'Usine</h4>
                         <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Action Irréversible</p>
                       </div>
                     </div>
@@ -1566,7 +1681,7 @@ export default function Administration({
                       <button
                         onClick={handleResetDatabase}
                         disabled={isResetting}
-                        className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black rounded-xl transition-all shadow-lg shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-3 cursor-pointer group"
+                        className="w-full py-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 disabled:opacity-50 flex items-center justify-center gap-3 cursor-pointer group"
                       >
                         {isResetting ? (
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -1590,7 +1705,7 @@ export default function Administration({
               <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                   <div className="space-y-1">
-                    <h2 className="text-2xl font-black text-[#111111] tracking-tight">
+                    <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
                       {language === "FR" ? "Gestion du Blog" : "Blog Management"}
                     </h2>
                     <p className="text-sm text-gray-500 font-medium leading-relaxed">
@@ -1610,7 +1725,7 @@ export default function Administration({
                         setBlogImageUrl("");
                         setIsAddingPost(true);
                       }}
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-white text-xs font-black uppercase rounded-2xl transition-all shadow-md shadow-orange-100 cursor-pointer self-start sm:self-center"
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-white text-xs font-bold uppercase rounded-2xl transition-all shadow-md shadow-orange-100 cursor-pointer self-start sm:self-center"
                     >
                       <Plus className="w-4 h-4" />
                       {language === "FR" ? "Rédiger un article" : "Write an Article"}
@@ -1620,7 +1735,7 @@ export default function Administration({
 
                 {isAddingPost && (
                   <form onSubmit={handleSaveBlogPost} className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 mb-8 space-y-6">
-                    <h3 className="text-lg font-black text-gray-900">
+                    <h3 className="text-lg font-bold text-gray-900">
                       {editingPost
                         ? (language === "FR" ? "Modifier l'article" : "Edit Article")
                         : (language === "FR" ? "Nouvel article de blog" : "New Blog Article")}
@@ -1628,7 +1743,7 @@ export default function Administration({
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                           {language === "FR" ? "Titre de l'article" : "Article Title"} *
                         </label>
                         <input
@@ -1642,7 +1757,7 @@ export default function Administration({
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                           {language === "FR" ? "Auteur" : "Author"} *
                         </label>
                         <input
@@ -1655,7 +1770,7 @@ export default function Administration({
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                           {language === "FR" ? "URL de l'image (optionnel)" : "Image URL (optional)"}
                         </label>
                         <input
@@ -1668,7 +1783,7 @@ export default function Administration({
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-xs font-extrabold text-gray-500 uppercase tracking-wider block">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
                           {language === "FR" ? "Contenu de l'article" : "Article Content"} *
                         </label>
                         <textarea
@@ -1700,7 +1815,7 @@ export default function Administration({
                       <button
                         type="submit"
                         disabled={isSubmittingBlog}
-                        className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md disabled:opacity-50"
+                        className="px-5 py-2.5 bg-[#FF6B00] hover:bg-[#E05E00] text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer shadow-md disabled:opacity-50"
                       >
                         {isSubmittingBlog
                           ? (language === "FR" ? "Enregistrement..." : "Saving...")
@@ -1711,7 +1826,7 @@ export default function Administration({
                 )}
 
                 <div className="space-y-4">
-                  <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider mb-2">
+                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-2">
                     {language === "FR" ? `Articles Publiés (${blogPosts.length})` : `Published Articles (${blogPosts.length})`}
                   </h3>
 
@@ -1747,7 +1862,7 @@ export default function Administration({
                                 <span className="uppercase tracking-wider">✍️ {post.author}</span>
                                 <span>📅 {post.date}</span>
                               </div>
-                              <h4 className="text-base font-black text-gray-900 tracking-tight line-clamp-2">
+                              <h4 className="text-base font-bold text-gray-900 tracking-tight line-clamp-2">
                                 {post.title}
                               </h4>
                               <p className="text-xs text-gray-500 font-medium leading-relaxed line-clamp-3">
@@ -1783,6 +1898,210 @@ export default function Administration({
             </div>
           )}
 
+          {/* TAB 5: ANNUAIRE MANAGEMENT */}
+          {activeTab === "annuaire" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="bg-white border border-gray-100 rounded-3xl p-8 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                  <div className="space-y-1">
+                    <h2 className="text-2xl font-bold text-[#111111] tracking-tight">
+                      {language === "FR" ? "Annuaire" : "Directory"}
+                    </h2>
+                    <p className="text-sm text-gray-500 font-medium leading-relaxed">
+                      {language === "FR"
+                        ? "Gérez les animaleries et les vétérinaires affichés dans l'annuaire."
+                        : "Manage pet shops and veterinarians displayed in the directory."}
+                    </p>
+                  </div>
+                  {!isAddingDirectory && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingDirectory(null);
+                        setDirType("veterinaire");
+                        setDirName("");
+                        setDirAddress("");
+                        setDirCity("");
+                        setDirPhone("");
+                        setDirDescription("");
+                        setIsAddingDirectory(true);
+                      }}
+                      className="inline-flex items-center gap-2 px-5 py-3 bg-[#FF6B00] hover:bg-[#E05E00] text-white text-xs font-bold uppercase rounded-2xl transition-all shadow-md shadow-orange-100 cursor-pointer self-start sm:self-center"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {language === "FR" ? "Ajouter une entrée" : "Add an Entry"}
+                    </button>
+                  )}
+                </div>
+
+                {isAddingDirectory && (
+                  <form onSubmit={handleSaveDirectoryEntry} className="bg-gray-50/50 border border-gray-100 rounded-3xl p-6 mb-8 space-y-6">
+                    <h3 className="text-lg font-bold text-gray-900">
+                      {editingDirectory
+                        ? (language === "FR" ? "Modifier l'entrée" : "Edit Entry")
+                        : (language === "FR" ? "Nouvelle entrée" : "New Entry")}
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Type" : "Type"} *
+                        </label>
+                        <select
+                          value={dirType}
+                          onChange={(e) => setDirType(e.target.value as 'veterinaire' | 'animalerie')}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        >
+                          <option value="veterinaire">{language === "FR" ? "Vétérinaire" : "Veterinarian"}</option>
+                          <option value="animalerie">{language === "FR" ? "Animalerie" : "Pet Shop"}</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Nom" : "Name"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={dirName}
+                          onChange={(e) => setDirName(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Ville" : "City"} *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={dirCity}
+                          onChange={(e) => setDirCity(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Téléphone" : "Phone"}
+                        </label>
+                        <input
+                          type="text"
+                          value={dirPhone}
+                          onChange={(e) => setDirPhone(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Adresse" : "Address"}
+                        </label>
+                        <input
+                          type="text"
+                          value={dirAddress}
+                          onChange={(e) => setDirAddress(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors"
+                        />
+                      </div>
+
+                      <div className="space-y-2 md:col-span-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block">
+                          {language === "FR" ? "Description (optionnel)" : "Description (optional)"}
+                        </label>
+                        <textarea
+                          rows={4}
+                          value={dirDescription}
+                          onChange={(e) => setDirDescription(e.target.value)}
+                          className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:border-[#FF6B00] text-sm font-semibold transition-colors resize-y leading-relaxed"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingDirectory(false);
+                          setEditingDirectory(null);
+                        }}
+                        className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+                        disabled={isSubmittingDir}
+                      >
+                        {language === "FR" ? "Annuler" : "Cancel"}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmittingDir}
+                        className="px-5 py-2.5 bg-[#111111] hover:bg-black text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isSubmittingDir ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                        {language === "FR" ? "Enregistrer" : "Save"}
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {directoryEntries.length === 0 && !isAddingDirectory ? (
+                    <div className="col-span-full py-12 text-center text-gray-400">
+                      <Store className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                      <p>{language === "FR" ? "Aucune entrée pour le moment." : "No entries yet."}</p>
+                    </div>
+                  ) : (
+                    directoryEntries.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="group flex flex-col bg-white border border-gray-100 hover:border-orange-200 rounded-3xl overflow-hidden transition-all hover:shadow-xl hover:shadow-orange-100/50"
+                      >
+                        <div className="p-6 flex-1 flex flex-col">
+                          <div className="flex justify-between items-start mb-4">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-orange-50 text-orange-700 text-[10px] font-bold rounded-full uppercase tracking-wider">
+                              <Store className="w-3 h-3" />
+                              {entry.type === 'veterinaire' ? (language === "FR" ? "Vétérinaire" : "Veterinarian") : (language === "FR" ? "Animalerie" : "Pet Shop")}
+                            </span>
+                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleEditDirectoryClick(entry)}
+                                className="w-8 h-8 flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-500 hover:text-gray-900 rounded-full transition-colors cursor-pointer"
+                                title="Modifier"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDirectoryClick(entry.id)}
+                                className="w-8 h-8 flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 rounded-full transition-colors cursor-pointer"
+                                title="Supprimer"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <h4 className="text-lg font-bold text-gray-900 tracking-tight mb-2">
+                            {entry.name}
+                          </h4>
+                          <p className="text-sm text-gray-600 flex items-center gap-2 mb-2">
+                            <MapPin className="w-4 h-4" /> {entry.city}
+                          </p>
+                          <p className="text-sm text-gray-500 line-clamp-3">
+                            {entry.description || (language === "FR" ? "Pas de description" : "No description")}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* SETTINGS VIEW */}
           {activeTab === "settings" && (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-500 max-w-2xl mx-auto">
@@ -1792,7 +2111,7 @@ export default function Administration({
                     <Settings className="w-6 h-6" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-black text-gray-900 tracking-tight">
+                    <h2 className="text-xl font-bold text-gray-900 tracking-tight">
                       {language === "FR" ? "Paramètres" : "Settings"}
                     </h2>
                     <p className="text-sm text-gray-500 font-medium">
@@ -1837,7 +2156,7 @@ export default function Administration({
                   <button
                     type="submit"
                     disabled={isUpdatingPassword}
-                    className="w-full py-3 bg-[#111111] hover:bg-black text-white font-black rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-[#111111] hover:bg-black text-white font-bold rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isUpdatingPassword && <Loader2 className="w-4 h-4 animate-spin" />}
                     {language === "FR" ? "Mettre à jour le mot de passe" : "Update Password"}
@@ -1901,7 +2220,7 @@ export default function Administration({
               <button
                 type="button"
                 onClick={handleConfirmAction}
-                className={`px-4 py-2 text-white font-black rounded-lg text-xs transition-all cursor-pointer shadow-sm ${
+                className={`px-4 py-2 text-white font-bold rounded-lg text-xs transition-all cursor-pointer shadow-sm ${
                   confirmModal.action === "block"
                     ? "bg-red-600 hover:bg-red-700"
                     : "bg-green-600 hover:bg-green-700"
@@ -1924,7 +2243,7 @@ export default function Administration({
             <div className="p-6 bg-gradient-to-r from-orange-500 to-[#FF6B00] text-white flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-12 h-12 rounded-full bg-white/20 font-black flex items-center justify-center text-lg uppercase overflow-hidden cursor-pointer hover:opacity-90"
+                  className="w-12 h-12 rounded-full bg-white/20 font-bold flex items-center justify-center text-lg uppercase overflow-hidden cursor-pointer hover:opacity-90"
                   onClick={() => {
                     const photo = (selectedUserDetails.role === "sitter" ? getSitterInfo(selectedUserDetails.id)?.photoUrl : selectedUserDetails.photoUrl);
                     if (photo) setViewingImage(photo);
@@ -1946,11 +2265,11 @@ export default function Administration({
                   )}
                 </div>
                 <div>
-                  <h3 className="text-base font-black tracking-tight">
+                  <h3 className="text-base font-bold tracking-tight">
                     {selectedUserDetails.firstName}{" "}
                     {selectedUserDetails.lastName}
                   </h3>
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-white/20">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-white/20">
                     {selectedUserDetails.role === "sitter"
                       ? "Pet Sitter"
                       : "Propriétaire"}
@@ -1971,7 +2290,7 @@ export default function Administration({
               {/* Core Information Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block mb-1">
                     Adresse Email
                   </span>
                   <span className="text-xs font-bold text-gray-800 break-all">
@@ -1979,7 +2298,7 @@ export default function Administration({
                   </span>
                 </div>
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block mb-1">
                     Numéro de Téléphone
                   </span>
                   <span className="text-xs font-bold text-gray-800">
@@ -1989,7 +2308,7 @@ export default function Administration({
                   </span>
                 </div>
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block mb-1">
                     Ville / City
                   </span>
                   <span className="text-xs font-bold text-gray-800">
@@ -1997,7 +2316,7 @@ export default function Administration({
                   </span>
                 </div>
                 <div className="bg-gray-50 p-3.5 rounded-2xl">
-                  <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase block mb-1">
+                  <span className="text-[10px] font-bold tracking-widest text-gray-400 uppercase block mb-1">
                     ID Utilisateur (UID)
                   </span>
                   <span className="text-[10px] font-mono font-bold text-gray-500 break-all">
@@ -2010,7 +2329,7 @@ export default function Administration({
               {selectedUserDetails.role === "sitter" &&
                 getSitterInfo(selectedUserDetails.id) && (
                   <div className="border-t border-gray-100 pt-4 space-y-3">
-                    <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                    <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                       Détails Professionnels
                     </h4>
                     <div className="bg-purple-50/50 p-4 rounded-2xl space-y-2">
@@ -2022,7 +2341,7 @@ export default function Administration({
                           <span className="text-gray-400 block uppercase">
                             Prix / Nuit
                           </span>
-                          <span className="text-purple-700 font-extrabold">
+                          <span className="text-purple-700 font-bold">
                             {
                               getSitterInfo(selectedUserDetails.id)
                                 ?.pricePerNight
@@ -2034,7 +2353,7 @@ export default function Administration({
                           <span className="text-gray-400 block uppercase">
                             Capacité
                           </span>
-                          <span className="text-purple-700 font-extrabold">
+                          <span className="text-purple-700 font-bold">
                             {getSitterInfo(selectedUserDetails.id)?.capacityMax}{" "}
                             animaux max
                           </span>
@@ -2043,7 +2362,7 @@ export default function Administration({
                           <span className="text-gray-400 block uppercase">
                             Évaluation
                           </span>
-                          <span className="text-purple-700 font-extrabold">
+                          <span className="text-purple-700 font-bold">
                             ⭐ {getSitterInfo(selectedUserDetails.id)?.rating} (
                             {getSitterInfo(selectedUserDetails.id)?.reviewCount}{" "}
                             avis)
@@ -2057,7 +2376,7 @@ export default function Administration({
               {/* Pets Section if Owner */}
               {selectedUserDetails.role === "owner" && (
                 <div className="border-t border-gray-100 pt-4 space-y-3">
-                  <h4 className="text-xs font-black text-gray-900 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Animaux Associés ({selectedUserDetails.pets?.length || 0})
                   </h4>
                   {selectedUserDetails.pets &&
@@ -2072,22 +2391,19 @@ export default function Administration({
                             className={`w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center text-xl shrink-0 overflow-hidden font-bold ${pet.photoUrl ? "cursor-pointer hover:opacity-80" : ""}`}
                             onClick={() => pet.photoUrl && setViewingImage(pet.photoUrl)}
                           >
-                            {pet.photoUrl ? (
+                            {pet.photoUrl && (pet.photoUrl.startsWith('data:image') || pet.photoUrl.startsWith('http')) ? (
                               <img
                                 src={pet.photoUrl}
                                 alt={pet.name}
                                 className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
                               />
-                            ) : pet.type === "chien" ? (
-                              "🐶"
-                            ) : pet.type === "chat" ? (
-                              "🐈"
                             ) : (
-                              "🐰"
+                              <span>{pet.photoUrl || (pet.type === 'chien' ? '🐶' : pet.type === 'chat' ? '🐈' : '🐰')}</span>
                             )}
                           </div>
                           <div className="space-y-1">
-                            <span className="text-xs font-black text-gray-800">
+                            <span className="text-xs font-bold text-gray-800">
                               {pet.name}{" "}
                               <span className="text-[10px] font-bold text-orange-500 uppercase">
                                 ({pet.type})
@@ -2125,7 +2441,7 @@ export default function Administration({
               <button
                 type="button"
                 onClick={() => setSelectedUserDetails(null)}
-                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-black rounded-xl text-xs transition-colors cursor-pointer uppercase tracking-wider"
+                className="px-5 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold rounded-xl text-xs transition-colors cursor-pointer uppercase tracking-wider"
               >
                 Fermer
               </button>

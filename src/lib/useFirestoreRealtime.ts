@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, onSnapshot, query, where, doc } from "firebase/firestore";
 import { db } from "../firebase";
-import { User, Sitter, Booking, Review, AppNotification, BlogPost } from "../types";
+import { User, Sitter, Booking, Review, AppNotification, BlogPost, DirectoryEntry } from "../types";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 
 export function useFirestoreRealtime() {
@@ -11,6 +11,7 @@ export function useFirestoreRealtime() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [directoryEntries, setDirectoryEntries] = useState<DirectoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   // For current auth state sync
@@ -161,6 +162,14 @@ export function useFirestoreRealtime() {
         snapshot.forEach((doc) => list.push(doc.data() as BlogPost));
         setBlogPosts(list);
       });
+
+      let unsubscribeDirectory = onSnapshot(collection(db, "directory"), (snapshot) => {
+        const directoryList: DirectoryEntry[] = [];
+        snapshot.forEach((doc) => directoryList.push(doc.data() as DirectoryEntry));
+        directoryList.sort((a, b) => new Date(b.dateAdded).getTime() - new Date(a.dateAdded).getTime());
+        setDirectoryEntries(directoryList);
+      });
+
     });
 
     return () => {
@@ -170,6 +179,9 @@ export function useFirestoreRealtime() {
       if (unsubscribeReviews) unsubscribeReviews();
       if (unsubscribeNotifications) unsubscribeNotifications();
       if (unsubscribeBlogPosts) unsubscribeBlogPosts();
+      // eslint-disable-next-line
+      // @ts-ignore
+      if (typeof unsubscribeDirectory !== 'undefined' && unsubscribeDirectory) unsubscribeDirectory();
       if (unsubscribeAuth) unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
       if (unsubscribeSitterDoc) unsubscribeSitterDoc();
@@ -183,6 +195,7 @@ export function useFirestoreRealtime() {
     reviews,
     notifications,
     blogPosts,
+    directoryEntries,
     currentUser,
     currentSitterUser,
     loading,

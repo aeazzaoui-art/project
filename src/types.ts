@@ -17,6 +17,7 @@ export type ActivePage =
   | 'about'
   | 'faq'
   | 'blog'
+  | 'annuaire'
   | 'privacy'
   | 'terms'
   | 'administration';
@@ -127,5 +128,16 @@ export interface BlogPost {
   author: string;
   date: string;
   imageUrl?: string;
+}
+
+export interface DirectoryEntry {
+  id: string;
+  type: 'veterinaire' | 'animalerie';
+  name: string;
+  address: string;
+  city: string;
+  phone: string;
+  description: string;
+  dateAdded: string;
 }
 
