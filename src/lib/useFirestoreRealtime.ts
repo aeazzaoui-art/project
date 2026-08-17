@@ -77,7 +77,8 @@ export function useFirestoreRealtime() {
         );
 
         // 2. Data Listeners (Admin vs Regular User)
-        const isAdmin = authUser.email === 'aeazzaoui@gmail.com';
+        const userEmail = authUser.email?.toLowerCase();
+        const isAdmin = userEmail === 'aeazzaoui@gmail.com' || userEmail === 'chayma.the@gmail.com';
         
         if (isAdmin) {
           unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {

@@ -44,7 +44,8 @@ export default function Header({
   const uniqueNotifications = Array.from(new Map(notifications.map(n => [n.id, n])).values());
   const userNotifications = uniqueNotifications.filter((n) => {
     if (!currentUser) return false;
-    const isAdmin = currentUser.email === 'aeazzaoui@gmail.com';
+    const userEmail = currentUser.email?.toLowerCase();
+    const isAdmin = userEmail === 'aeazzaoui@gmail.com' || userEmail === 'chayma.the@gmail.com';
     if (isAdmin) {
       return n.userId === 'admin' || n.userId === 'all';
     }

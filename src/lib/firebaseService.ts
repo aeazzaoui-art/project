@@ -163,25 +163,34 @@ export async function updateAdminPassword(newPassword: string): Promise<void> {
 }
 
 export async function adminLoginWithAuth(email: string, password: string): Promise<void> {
+  const cleanEmail = email.trim().toLowerCase();
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(auth, cleanEmail, password);
   } catch (err: any) {
-    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+    console.error('Admin login error:', err.code, err.message);
+    // auth/invalid-credential is the modern catch-all for wrong email/password
+    // auth/user-not-found and auth/wrong-password are legacy but still sometimes returned
+    if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
       try {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth, cleanEmail, password);
         const uid = auth.currentUser?.uid;
         if (uid) {
+          const isAdmin2 = cleanEmail === 'chayma.the@gmail.com';
           await saveUser({
             id: uid,
-            firstName: "Admin",
-            lastName: "System",
-            email,
-            role: "owner", // Using standard role, but email gives admin rights via rules
+            firstName: isAdmin2 ? "Chaymae" : "Admin",
+            lastName: isAdmin2 ? "Kazouti" : "System",
+            email: cleanEmail,
+            role: "owner",
             city: "Casablanca",
             pets: []
           });
         }
-      } catch (createErr) {
+      } catch (createErr: any) {
+        console.error('Error creating admin user:', createErr.code, createErr.message);
+        if (createErr.code === 'auth/email-already-in-use') {
+          throw new Error('USER_EXISTS_WRONG_PASSWORD');
+        }
         throw createErr;
       }
     } else {
@@ -535,8 +544,9 @@ export async function resetPlatformData(): Promise<void> {
       const snapshot = await getDocs(colRef);
       
       for (const docSnap of snapshot.docs) {
-        // Don't delete the admin user profile
-        if (colName === 'users' && docSnap.data().email === 'aeazzaoui@gmail.com') {
+        // Don't delete the admin user profiles
+        const email = docSnap.data().email?.toLowerCase();
+        if (colName === 'users' && (email === 'aeazzaoui@gmail.com' || email === 'chayma.the@gmail.com')) {
           continue;
         }
         await deleteDoc(doc(db, colName, docSnap.id));

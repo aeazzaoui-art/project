@@ -85,7 +85,8 @@ export default function Administration({
   useEffect(() => {
     if (isAdminLoggedIn) {
       const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (!user || user.email?.toLowerCase() !== "aeazzaoui@gmail.com") {
+        const email = user.email?.toLowerCase();
+        if (!user || (email !== "aeazzaoui@gmail.com" && email !== "chayma.the@gmail.com")) {
           setIsAdminLoggedIn(false);
           sessionStorage.removeItem("amuch_admin_logged_in");
         }
@@ -194,7 +195,8 @@ export default function Administration({
 
     setIsSubmittingBlog(true);
     try {
-      if (!auth.currentUser || auth.currentUser.email?.toLowerCase() !== "aeazzaoui@gmail.com") {
+      const curEmail = auth.currentUser?.email?.toLowerCase();
+      if (!auth.currentUser || (curEmail !== "aeazzaoui@gmail.com" && curEmail !== "chayma.the@gmail.com")) {
         alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
         return;
       }
@@ -250,7 +252,8 @@ export default function Administration({
       return;
     }
     try {
-      if (!auth.currentUser || auth.currentUser.email?.toLowerCase() !== "aeazzaoui@gmail.com") {
+      const curEmail = auth.currentUser?.email?.toLowerCase();
+      if (!auth.currentUser || (curEmail !== "aeazzaoui@gmail.com" && curEmail !== "chayma.the@gmail.com")) {
         alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
         return;
       }
@@ -281,7 +284,8 @@ export default function Administration({
 
     setIsSubmittingDir(true);
     try {
-      if (!auth.currentUser || auth.currentUser.email?.toLowerCase() !== "aeazzaoui@gmail.com") {
+      const curEmail = auth.currentUser?.email?.toLowerCase();
+      if (!auth.currentUser || (curEmail !== "aeazzaoui@gmail.com" && curEmail !== "chayma.the@gmail.com")) {
         alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
         return;
       }
@@ -346,7 +350,8 @@ export default function Administration({
       return;
     }
     try {
-      if (!auth.currentUser || auth.currentUser.email?.toLowerCase() !== "aeazzaoui@gmail.com") {
+      const curEmail = auth.currentUser?.email?.toLowerCase();
+      if (!auth.currentUser || (curEmail !== "aeazzaoui@gmail.com" && curEmail !== "chayma.the@gmail.com")) {
         alert(language === "FR" ? "Session expirée. Veuillez vous reconnecter." : "Session expired. Please log in again.");
         return;
       }
@@ -386,17 +391,27 @@ export default function Administration({
     setLoginError("");
     setIsLoggingIn(true);
 
-    if (email.trim().toLowerCase() === "aeazzaoui@gmail.com") {
+    const emailLower = email.trim().toLowerCase();
+    if (emailLower === "aeazzaoui@gmail.com" || emailLower === "chayma.the@gmail.com") {
       try {
         await adminLoginWithAuth(email.trim(), password);
         setIsAdminLoggedIn(true);
         sessionStorage.setItem("amuch_admin_logged_in", "true");
-      } catch (err) {
-        setLoginError(
-          language === "FR"
-            ? "Identifiants invalides. Veuillez réessayer."
-            : "البريد الإلكتروني أو كلمة المرor غير صحيحة."
-        );
+      } catch (err: any) {
+        console.error("Login attempt failed:", err);
+        if (err.message === 'USER_EXISTS_WRONG_PASSWORD') {
+          setLoginError(
+            language === "FR"
+              ? "Le compte existe déjà avec un mot de passe différent. Veuillez vérifier le mot de passe."
+              : "Account already exists with a different password. Please check the password."
+          );
+        } else {
+          setLoginError(
+            language === "FR"
+              ? `Identifiants invalides (${err.code || err.message}). Veuillez réessayer.`
+              : `Invalid credentials (${err.code || err.message}). Please try again.`
+          );
+        }
       }
     } else {
       setLoginError(
@@ -667,7 +682,7 @@ export default function Administration({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="aeazzaoui@gmail.com"
+                    placeholder="admin@amuch.ma"
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-[#FF6B00] focus:ring-1 focus:ring-[#FF6B00]"
                   />
                 </div>
@@ -752,14 +767,14 @@ export default function Administration({
         {/* Logged in Admin Profile */}
         <div className="p-4 mx-4 my-3 bg-gray-50 rounded-2xl flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-[#FF6B00] text-white flex items-center justify-center font-normal text-sm shadow-inner">
-            AA
+            {auth.currentUser?.email?.toLowerCase() === "chayma.the@gmail.com" ? "CK" : "AA"}
           </div>
           <div className="overflow-hidden">
             <h4 className="text-xs font-normal text-gray-800 truncate">
-              Abdou El Azzaoui
+              {auth.currentUser?.email?.toLowerCase() === "chayma.the@gmail.com" ? "Chaymae Kazouti" : "Abdou El Azzaoui"}
             </h4>
             <span className="text-[10px] text-gray-400 truncate block">
-              aeazzaoui@gmail.com
+              {auth.currentUser?.email || "admin@amuch.ma"}
             </span>
           </div>
         </div>
@@ -1693,7 +1708,7 @@ export default function Administration({
                     
                     <p className="text-xs text-red-600 font-bold leading-relaxed">
                       Cette action supprimera toutes les réservations, les avis, les messages, les profils sitters 
-                      et tous les profils utilisateurs (sauf aeazzaoui@gmail.com). 
+                      et tous les profils utilisateurs (sauf les administrateurs). 
                       Les comptes Auth Firebase ne sont pas affectés mais n'auront plus de profil lié.
                     </p>
 

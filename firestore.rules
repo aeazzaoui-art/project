@@ -9,11 +9,11 @@ service cloud.firestore {
 
     function isAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == "aeazzaoui@gmail.com" ||
-        request.auth.token.email == "Aeazzaoui@gmail.com" ||
         request.auth.token.email.lower() == "aeazzaoui@gmail.com" ||
+        request.auth.token.email.lower() == "chayma.the@gmail.com" ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email == "aeazzaoui@gmail.com")
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email.lower() == "aeazzaoui@gmail.com" ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.email.lower() == "chayma.the@gmail.com"))
       );
     }
 
@@ -79,14 +79,14 @@ service cloud.firestore {
       allow get: if isSignedIn() && isValidId(notificationId) && (
         resource.data.userId == request.auth.uid ||
         resource.data.userId == "all" ||
-        (resource.data.userId == "admin" && request.auth.token.email == "aeazzaoui@gmail.com")
+        (resource.data.userId == "admin" && (request.auth.token.email.lower() == "aeazzaoui@gmail.com" || request.auth.token.email.lower() == "chayma.the@gmail.com"))
       );
       allow list: if isSignedIn();
       allow create: if isSignedIn() && isValidId(notificationId);
       allow update: if isSignedIn() && isValidId(notificationId) && (
         // Allow marking notification as read (only changing the 'read' field)
         (
-          (resource.data.userId == request.auth.uid || (resource.data.userId == "admin" && request.auth.token.email == "aeazzaoui@gmail.com")) &&
+          (resource.data.userId == request.auth.uid || (resource.data.userId == "admin" && (request.auth.token.email.lower() == "aeazzaoui@gmail.com" || request.auth.token.email.lower() == "chayma.the@gmail.com"))) &&
           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read'])
         ) ||
         // Admin override
